@@ -102,6 +102,7 @@ app.post('/api/whatsapp/embedded-signup', async (req, res) => {
       }
     });
     accessToken = tokenRes.data.access_token;
+    console.log('[DEBUG] Token exchange successful');
     fs.appendFileSync('signup_debug.log', `\n[SUCCESS] Token exchange worked with redirectUri: ${redirectUri}\n`);
 
     // 2. Inspect the token to get the WABA ID granted during Embedded Signup
@@ -167,9 +168,10 @@ app.post('/api/whatsapp/embedded-signup', async (req, res) => {
     res.json({ success: true, displayPhoneNumber });
 
   } catch (error) {
-    console.error("Embedded Signup Error:", error.response?.data || error.message);
-    fs.appendFileSync('signup_debug.log', `[${new Date().toISOString()}] Error: ${JSON.stringify(error.response?.data || error.message)}\n`);
-    res.status(500).json({ error: "Failed to complete signup", details: error.response?.data || error.message });
+    const errorDetails = error.response?.data || error.message;
+    console.error("Embedded Signup Error:", errorDetails);
+    fs.appendFileSync('signup_debug.log', `[${new Date().toISOString()}] Error: ${JSON.stringify(errorDetails)}\n`);
+    res.status(500).json({ error: "Failed to complete signup", details: errorDetails });
   }
 });
 
