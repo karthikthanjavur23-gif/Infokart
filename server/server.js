@@ -592,7 +592,7 @@ app.post('/webhook', async (req, res) => {
 });
 
 // All other routes should serve the frontend index.html
-app.get('(.*)', (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
 });
 
