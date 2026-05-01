@@ -84,6 +84,11 @@ app.post('/api/whatsapp/embedded-signup', async (req, res) => {
   const appSecret = process.env.META_APP_SECRET;
 
   if (!code || !appId || !appSecret) {
+    console.error('[ERROR] Missing critical credentials:', { 
+      hasCode: !!code, 
+      hasAppId: !!appId, 
+      hasAppSecret: !!appSecret 
+    });
     return res.status(400).json({ error: 'Missing code, appId, or appSecret' });
   }
 
@@ -596,6 +601,12 @@ app.post('/webhook', async (req, res) => {
 // All other routes should serve the frontend index.html
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('[GLOBAL ERROR]', err.stack);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
