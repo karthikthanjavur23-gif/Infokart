@@ -39,7 +39,7 @@ async function getWhatsAppConfig() {
   return {
     accessToken: process.env.META_ACCESS_TOKEN,
     phoneNumberId: process.env.PHONE_NUMBER_ID,
-    wabaId: null
+    wabaId: process.env.WABA_ID
   };
 }
 
@@ -70,8 +70,18 @@ app.get('/api/whatsapp/init-config', (req, res) => {
 });
 
 app.get('/api/whatsapp/status', async (req, res) => {
-  const config = db.prepare('SELECT * FROM whatsapp_settings WHERE id = 1').get();
-  res.json({ connected: !!(config && config.access_token), details: config });
+  const dbConfig = db.prepare('SELECT * FROM whatsapp_settings WHERE id = 1').get();
+  
+  // If we have manual ENV credentials, prioritize them if DB is empty
+  const isConnected = !!(dbConfig?.access_token || process.env.META_ACCESS_TOKEN);
+  const details = dbConfig || {
+    display_phone_number: 'Manual Config',
+    verified_name: 'Official API (Manual)',
+    phone_number_id: process.env.PHONE_NUMBER_ID,
+    waba_id: process.env.WABA_ID
+  };
+
+  res.json({ connected: isConnected, details });
 });
 
 const fs = require('fs');
