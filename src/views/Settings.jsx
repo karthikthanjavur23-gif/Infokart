@@ -71,20 +71,30 @@ const Settings = () => {
       return alert("Meta App credentials are missing in your .env file. Please provide them to continue.");
     }
 
-    // Capture the exact URL for redirection (normalized)
-    const redirectUri = (window.location.origin + window.location.pathname).replace(/\/$/, "");
-    
-    // Construct the manual OAuth URL for Embedded Signup
-    const oauthUrl = `https://www.facebook.com/v22.0/dialog/oauth?` + 
-      `client_id=${metaConfig.appId}` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&response_type=code` +
-      `&config_id=${metaConfig.configId}` +
-      `&override_default_response_type=true` +
-      `&extras=${encodeURIComponent(JSON.stringify({ feature: "whatsapp_embedded_signup", sessionInfoVersion: "3", setup: {} }))}`;
-
-    // Redirect the whole page to Facebook
-    window.location.href = oauthUrl;
+    // Launch using the official Meta JS SDK (required for Business Login)
+    window.FB.login((response) => {
+      if (response.authResponse) {
+        // The SDK returns the 'code' inside the authResponse if using the Business Login flow
+        const code = response.authResponse.code;
+        if (code) {
+          console.log("[DEBUG] SDK login successful, code received");
+          completeSignup(code, redirectUri);
+        } else {
+          console.error("[ERROR] SDK login succeeded but no code was returned. Ensure config_id is correct.");
+        }
+      } else {
+        console.log("[INFO] User cancelled login or did not fully authorize.");
+      }
+    }, {
+      config_id: metaConfig.configId,
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: {
+        feature: "whatsapp_embedded_signup",
+        sessionInfoVersion: 3,
+        setup: {}
+      }
+    });
   };
 
   const completeSignup = async (code, manualRedirectUri) => {
