@@ -81,7 +81,7 @@ const Settings = () => {
       `&response_type=code` +
       `&config_id=${metaConfig.configId}` +
       `&override_default_response_type=true` +
-      `&extras=${encodeURIComponent(JSON.stringify({ setup: {} }))}`;
+      `&extras=${encodeURIComponent(JSON.stringify({ feature: "whatsapp_embedded_signup", sessionInfoVersion: "3", setup: {} }))}`;
 
     // Redirect the whole page to Facebook
     window.location.href = oauthUrl;
