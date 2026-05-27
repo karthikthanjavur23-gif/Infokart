@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Users, Upload, Filter, Search, Plus, X, CheckSquare, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const Contacts = () => {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ const Contacts = () => {
   // Fetch contacts from local DB
   const fetchContacts = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/contacts`);
+      const res = await fetch(`${API_BASE_URL}/api/contacts`, { headers: getAuthHeaders() });
       const data = await res.json();
       setContacts(data);
     } catch (e) {
@@ -36,7 +36,7 @@ const Contacts = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/contacts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newContact)
       });
       if (res.ok) {
@@ -74,7 +74,7 @@ const Contacts = () => {
         try {
           const res = await fetch(`${API_BASE_URL}/api/contacts/bulk`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ contacts: contactsToImport })
           });
           if (res.ok) {

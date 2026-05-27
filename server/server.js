@@ -3,6 +3,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const db = require('./database');
 
@@ -10,6 +12,18 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+const JWT_SECRET = process.env.JWT_SECRET || 'infokart_secret_key_123';
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: "Access denied" });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: "Invalid token" });
+    req.user = user;
+    next();
+  });
+};
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -26,27 +40,37 @@ const genAI = GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key_here'
 
 const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
 
-// Helper to get WhatsApp Config (prefer DB over ENV)
-async function getWhatsAppConfig() {
-  const config = db.prepare('SELECT * FROM whatsapp_settings WHERE id = 1').get();
+// Helper to get Active WhatsApp Config (Authenticated)
+async function getWhatsAppConfig(orgId) {
+  const config = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(orgId);
   if (config && config.access_token && config.phone_number_id) {
     return {
+      id: config.id,
+      nickname: config.nickname,
       accessToken: config.access_token,
       phoneNumberId: config.phone_number_id,
       wabaId: config.waba_id
     };
   }
-  return {
-    accessToken: process.env.META_ACCESS_TOKEN,
-    phoneNumberId: process.env.PHONE_NUMBER_ID,
-    wabaId: process.env.WABA_ID
-  };
+  // Fallback to first available if none active
+  const first = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ?').get(orgId);
+  if (first) return { id: first.id, accessToken: first.access_token, phoneNumberId: first.phone_number_id, wabaId: first.waba_id };
+  return null;
 }
 
 // Helper to call Gemini
 async function askAI(prompt, systemInstruction = "You are a professional WhatsApp Marketing Assistant for InfoKart.") {
   if (!aiModel) {
     return "AI is currently in simulation mode. Please provide a valid GEMINI_API_KEY in the .env file.";
+}
+
+// Helper to Log System Actions
+function logAction(userId, orgId, action, details) {
+  try {
+    const stmt = db.prepare('INSERT INTO audit_logs (user_id, org_id, action, details) VALUES (?, ?, ?, ?)');
+    stmt.run(userId, orgId, action, JSON.stringify(details));
+  } catch (e) { console.error('Audit Log Error:', e); }
+}
   }
   try {
     const fullPrompt = `${systemInstruction}\n\nUser Request: ${prompt}`;
@@ -69,27 +93,64 @@ app.get('/api/whatsapp/init-config', (req, res) => {
   });
 });
 
-app.get('/api/whatsapp/status', async (req, res) => {
-  const dbConfig = db.prepare('SELECT * FROM whatsapp_settings WHERE id = 1').get();
+// 1. Auth & Multi-Tenancy Seed
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+  const token = jwt.sign({ id: user.id, org_id: user.org_id, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
   
-  // If we have manual ENV credentials, prioritize them if DB is empty
-  const isConnected = !!(dbConfig?.access_token || process.env.META_ACCESS_TOKEN);
-  const details = dbConfig || {
-    display_phone_number: 'Manual Config',
-    verified_name: 'Official API (Manual)',
-    phone_number_id: process.env.PHONE_NUMBER_ID,
-    waba_id: process.env.WABA_ID
-  };
+  logAction(user.id, user.org_id, 'LOGIN', { email: user.email });
+  
+  res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+});
 
-  res.json({ connected: isConnected, details });
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json(req.user);
+});
+
+(function seedAuth() {
+  try {
+    const orgCount = db.prepare('SELECT count(*) as count FROM organizations').get().count;
+    if (orgCount === 0) {
+      const org = db.prepare('INSERT INTO organizations (name) VALUES (?)').run('Infokart Demo');
+      const orgId = org.lastInsertRowid;
+      const hashedPassword = bcrypt.hashSync('admin123', 10);
+      db.prepare('INSERT INTO users (org_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)')
+        .run(orgId, 'Karthik', 'admin@infokart.in', hashedPassword, 'admin');
+    }
+  } catch (e) { console.error('Seed Error:', e.message); }
+})();
+
+// 2. WhatsApp Accounts Management
+app.get('/api/whatsapp/accounts', authenticateToken, (req, res) => {
+  const accounts = db.prepare('SELECT id, nickname, display_phone_number, verified_name, is_active FROM whatsapp_settings WHERE org_id = ?').all(req.user.org_id);
+  res.json(accounts);
+});
+
+app.post('/api/whatsapp/switch-account', authenticateToken, (req, res) => {
+  const { id } = req.body;
+  db.prepare('UPDATE whatsapp_settings SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
+  db.prepare('UPDATE whatsapp_settings SET is_active = 1 WHERE id = ? AND org_id = ?').run(id, req.user.org_id);
+  
+  logAction(req.user.id, req.user.org_id, 'SWITCH_ACCOUNT', { accountId: id });
+  
+  res.json({ success: true });
+});
+
+app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
+  const dbConfig = await getWhatsAppConfig(req.user.org_id);
+  const isConnected = !!(dbConfig?.accessToken);
+  res.json({ connected: isConnected, details: dbConfig });
 });
 
 const fs = require('fs');
 
-app.post('/api/whatsapp/embedded-signup', async (req, res) => {
+app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) => {
   const { code, redirectUri } = req.body;
-  fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Payload: ${JSON.stringify(req.body)}\n`);
-  console.log('[DEBUG] Received embedded signup payload:', { code: code ? 'PRESENT' : 'MISSING', redirectUri });
+  const orgId = req.user.org_id;
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
 
@@ -164,21 +225,15 @@ app.post('/api/whatsapp/embedded-signup', async (req, res) => {
     const displayPhoneNumber = phoneData.display_phone_number;
     const verifiedName = phoneData.verified_name;
 
-    // 4. Save to Database
+    // 4. Save to Database (Multi-tenant)
     const stmt = db.prepare(`
-      INSERT INTO whatsapp_settings (id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, status)
-      VALUES (1, ?, ?, ?, ?, ?, 'Connected')
-      ON CONFLICT(id) DO UPDATE SET 
-        waba_id = excluded.waba_id,
-        phone_number_id = excluded.phone_number_id,
-        access_token = excluded.access_token,
-        display_phone_number = excluded.display_phone_number,
-        verified_name = excluded.verified_name,
-        status = 'Connected',
-        updated_at = CURRENT_TIMESTAMP
+      INSERT INTO whatsapp_settings (org_id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, status, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, 'Connected', 1)
     `);
 
-    stmt.run(wabaId, phoneNumberId, accessToken, displayPhoneNumber, verifiedName);
+    stmt.run(orgId, wabaId, phoneNumberId, accessToken, displayPhoneNumber, verifiedName);
+
+    logAction(req.user.id, orgId, 'CONNECT_WHATSAPP', { method: 'EMBEDDED', phone: displayPhoneNumber });
 
     res.json({ success: true, displayPhoneNumber });
 
@@ -190,34 +245,62 @@ app.post('/api/whatsapp/embedded-signup', async (req, res) => {
   }
 });
 
-app.post('/api/whatsapp/disconnect', (req, res) => {
-  db.prepare('DELETE FROM whatsapp_settings WHERE id = 1').run();
+app.post('/api/whatsapp/manual-config', authenticateToken, (req, res) => {
+  const { accessToken, phoneNumberId, wabaId, verifiedName, nickname } = req.body;
+  
+  if (!accessToken || !phoneNumberId || !wabaId) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO whatsapp_settings (org_id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, nickname, status, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'Connected', 1)
+    `);
+
+    stmt.run(
+      req.user.org_id, 
+      wabaId, 
+      phoneNumberId, 
+      accessToken, 
+      'Manual Config', 
+      verifiedName || 'Manual Account',
+      nickname || 'Main Line'
+    );
+    
+    logAction(req.user.id, req.user.org_id, 'CONNECT_WHATSAPP', { method: 'MANUAL' });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Manual Config Error:", error);
+    res.status(500).json({ error: "Failed to save configuration" });
+  }
+});
+
+app.post('/api/whatsapp/disconnect', authenticateToken, (req, res) => {
+  db.prepare('DELETE FROM whatsapp_settings WHERE id = ? AND org_id = ?').run(req.body.id, req.user.org_id);
   res.json({ success: true });
 });
 
 // 1. Dashboard Stats
-app.get('/api/dashboard', (req, res) => {
-  const totalContacts = db.prepare('SELECT COUNT(*) as count FROM contacts').get().count;
-  const activeCampaigns = db.prepare("SELECT COUNT(*) as count FROM campaigns WHERE status = 'Active'").get().count;
-  const botResponses = db.prepare("SELECT COUNT(*) as count FROM messages WHERE sender = 'bot'").get().count;
-  const leadsClosed = Math.floor(totalContacts * 0.15); // Simulated metric
+app.get('/api/dashboard', authenticateToken, (req, res) => {
+  const orgId = req.user.org_id;
+  const totalContacts = db.prepare('SELECT COUNT(*) as count FROM contacts WHERE org_id = ?').get(orgId).count;
+  const activeCampaigns = db.prepare("SELECT COUNT(*) as count FROM campaigns WHERE status = 'Active' AND org_id = ?").get(orgId).count;
+  const botResponses = db.prepare("SELECT COUNT(*) as count FROM messages WHERE sender = 'bot' AND org_id = ?").get(orgId).count;
+  const leadsClosed = Math.floor(totalContacts * 0.15);
 
-  res.json({
-    totalContacts,
-    activeCampaigns,
-    botResponses,
-    leadsClosed
-  });
+  res.json({ totalContacts, activeCampaigns, botResponses, leadsClosed });
 });
 
 // 2. Campaigns
-app.get('/api/campaigns', (req, res) => {
-  const campaigns = db.prepare('SELECT * FROM campaigns ORDER BY id DESC').all();
+app.get('/api/campaigns', authenticateToken, (req, res) => {
+  const campaigns = db.prepare('SELECT * FROM campaigns WHERE org_id = ? ORDER BY id DESC').all(req.user.org_id);
   res.json(campaigns);
 });
 
-app.get('/api/campaigns/:id', (req, res) => {
-  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(req.params.id);
+app.get('/api/campaigns/:id', authenticateToken, (req, res) => {
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ? AND org_id = ?').get(req.params.id, req.user.org_id);
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
   res.json(campaign);
 });
@@ -292,6 +375,8 @@ app.post('/api/campaigns/:id/send', async (req, res) => {
   // Response immediately to let UI know it started
   res.json({ success: true, message: `Started sending to ${contacts.length} contacts.` });
 
+  logAction(req.user.id, req.user.org_id, 'SEND_CAMPAIGN', { campaignId, targetCount: contacts.length });
+
   // Process in background
   (async () => {
     console.log(`🚀 Starting background processing for Campaign ${campaignId}`);
@@ -330,22 +415,46 @@ app.post('/api/campaigns/:id/send', async (req, res) => {
 });
 
 // 3. Contacts
-app.get('/api/contacts', (req, res) => {
-  const contacts = db.prepare('SELECT * FROM contacts ORDER BY created_at DESC').all();
+app.get('/api/contacts', authenticateToken, (req, res) => {
+  const contacts = db.prepare('SELECT * FROM contacts WHERE org_id = ? ORDER BY created_at DESC').all(req.user.org_id);
   res.json(contacts);
 });
 
-app.post('/api/contacts', (req, res) => {
+app.get('/api/contacts/:phone_number', authenticateToken, (req, res) => {
+  const contact = db.prepare('SELECT * FROM contacts WHERE phone_number = ? AND org_id = ?').get(req.params.phone_number, req.user.org_id);
+  if (!contact) return res.status(404).json({ error: 'Contact not found' });
+  res.json(contact);
+});
+
+app.patch('/api/contacts/:phone_number', authenticateToken, (req, res) => {
+  const { name, email, tags, notes } = req.body;
+  try {
+    const stmt = db.prepare(`
+      UPDATE contacts 
+      SET name = COALESCE(?, name), 
+          email = COALESCE(?, email), 
+          tags = COALESCE(?, tags), 
+          notes = COALESCE(?, notes) 
+      WHERE phone_number = ? AND org_id = ?
+    `);
+    stmt.run(name, email, tags, notes, req.params.phone_number, req.user.org_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/contacts', authenticateToken, (req, res) => {
   const { name, phone_number, tags } = req.body;
   if (!phone_number) return res.status(400).json({ error: "Phone number required" });
   try {
-    const stmt = db.prepare('INSERT INTO contacts (name, phone_number, tags) VALUES (?, ?, ?)');
-    const info = stmt.run(name || 'Unknown', phone_number, tags || '');
+    const stmt = db.prepare('INSERT INTO contacts (name, phone_number, tags, org_id) VALUES (?, ?, ?, ?)');
+    const info = stmt.run(name || 'Unknown', phone_number, tags || '', req.user.org_id);
     res.json({ id: info.lastInsertRowid, success: true });
   } catch (e) {
     if (e.message.includes('UNIQUE constraint failed')) {
-      const stmt = db.prepare('UPDATE contacts SET name = ?, tags = ? WHERE phone_number = ?');
-      stmt.run(name || 'Unknown', tags || '', phone_number);
+      const stmt = db.prepare('UPDATE contacts SET name = ?, tags = ? WHERE phone_number = ? AND org_id = ?');
+      stmt.run(name || 'Unknown', tags || '', phone_number, req.user.org_id);
       res.json({ success: true, updated: true });
     } else {
       res.status(500).json({ error: e.message });
@@ -353,48 +462,40 @@ app.post('/api/contacts', (req, res) => {
   }
 });
 
-app.post('/api/contacts/bulk', (req, res) => {
+app.post('/api/contacts/bulk', authenticateToken, (req, res) => {
   const { contacts } = req.body;
   if (!Array.isArray(contacts)) return res.status(400).json({ error: "Array of contacts required" });
-
   const insert = db.prepare(`
-    INSERT INTO contacts (name, phone_number, tags) VALUES (?, ?, ?)
+    INSERT INTO contacts (name, phone_number, tags, org_id) VALUES (?, ?, ?, ?)
     ON CONFLICT(phone_number) DO UPDATE SET 
       name = excluded.name,
       tags = excluded.tags
   `);
-
   const insertMany = db.transaction((list) => {
     for (const c of list) {
       if (c.phone_number) {
-        insert.run(c.name || 'Unknown', c.phone_number, c.tags || '');
+        insert.run(c.name || 'Unknown', c.phone_number, c.tags || '', req.user.org_id);
       }
     }
   });
-
-  try {
-    insertMany(contacts);
-    res.json({ success: true, count: contacts.length });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+  insertMany(contacts);
+  res.json({ success: true, count: contacts.length });
 });
 
 
 // 4. Shared Inbox
-app.get('/api/inbox', (req, res) => {
-  // Get latest message per contact for sidebar
+app.get('/api/inbox', authenticateToken, (req, res) => {
   const inbox = db.prepare(`
     SELECT phone_number, content, direction, created_at, sender
     FROM messages 
-    WHERE id IN (SELECT MAX(id) FROM messages GROUP BY phone_number)
+    WHERE org_id = ? AND id IN (SELECT MAX(id) FROM messages GROUP BY phone_number)
     ORDER BY created_at DESC
-  `).all();
+  `).all(req.user.org_id);
   res.json(inbox);
 });
 
-app.get('/api/messages/:phone_number', (req, res) => {
-  const messages = db.prepare('SELECT * FROM messages WHERE phone_number = ? ORDER BY created_at ASC').all(req.params.phone_number);
+app.get('/api/messages/:phone_number', authenticateToken, (req, res) => {
+  const messages = db.prepare('SELECT * FROM messages WHERE phone_number = ? AND org_id = ? ORDER BY created_at ASC').all(req.params.phone_number, req.user.org_id);
   res.json(messages);
 });
 
@@ -456,36 +557,35 @@ app.post('/api/send-message', async (req, res) => {
 
 
 // 5. Bot Config & Options
-app.get('/api/bot/options/:platform', (req, res) => {
-  console.log(`GET Bot Options for ${req.params.platform}`);
-  const config = db.prepare('SELECT value FROM bot_configs WHERE platform = ? AND key = ?').get(req.params.platform, 'botOptions');
+app.get('/api/bot/options/:platform', authenticateToken, (req, res) => {
+  const config = db.prepare('SELECT value FROM bot_configs WHERE platform = ? AND key = ? AND org_id = ?').get(req.params.platform, 'botOptions', req.user.org_id);
   res.json(config ? JSON.parse(config.value) : []);
 });
 
-app.post('/api/bot/options', (req, res) => {
+app.post('/api/bot/options', authenticateToken, (req, res) => {
   const { platform, options } = req.body;
   const stmt = db.prepare(`
-    INSERT INTO bot_configs (platform, key, value) VALUES (?, ?, ?)
-    ON CONFLICT(platform, key) DO UPDATE SET value = excluded.value
+    INSERT INTO bot_configs (platform, key, value, org_id) VALUES (?, ?, ?, ?)
+    ON CONFLICT(platform, key, org_id) DO UPDATE SET value = excluded.value
   `);
-  stmt.run(platform, 'botOptions', JSON.stringify(options));
+  stmt.run(platform, 'botOptions', JSON.stringify(options), req.user.org_id);
   res.json({ success: true });
 });
 
-app.get('/api/bot/config/:platform', (req, res) => {
-  const configs = db.prepare('SELECT key, value FROM bot_configs WHERE platform = ?').all(req.params.platform);
+app.get('/api/bot/config/:platform', authenticateToken, (req, res) => {
+  const configs = db.prepare('SELECT key, value FROM bot_configs WHERE platform = ? AND org_id = ?').all(req.params.platform, req.user.org_id);
   const result = {};
   configs.forEach(c => result[c.key] = c.value === 'true');
   res.json(result);
 });
 
-app.post('/api/bot/config', (req, res) => {
+app.post('/api/bot/config', authenticateToken, (req, res) => {
   const { platform, key, value } = req.body;
   const stmt = db.prepare(`
-    INSERT INTO bot_configs (platform, key, value) VALUES (?, ?, ?)
-    ON CONFLICT(platform, key) DO UPDATE SET value = excluded.value
+    INSERT INTO bot_configs (platform, key, value, org_id) VALUES (?, ?, ?, ?)
+    ON CONFLICT(platform, key, org_id) DO UPDATE SET value = excluded.value
   `);
-  stmt.run(platform, key, typeof value === 'object' ? JSON.stringify(value) : value.toString());
+  stmt.run(platform, key, typeof value === 'object' ? JSON.stringify(value) : value.toString(), req.user.org_id);
   res.json({ success: true });
 });
 
@@ -530,25 +630,71 @@ app.post('/api/ai/plan-campaign', async (req, res) => {
 });
 
 // 7. Message Templates
-app.get('/api/templates', (req, res) => {
-  const templates = db.prepare('SELECT * FROM templates ORDER BY created_at DESC').all();
+app.get('/api/templates', authenticateToken, (req, res) => {
+  const templates = db.prepare('SELECT * FROM templates WHERE org_id = ? ORDER BY created_at DESC').all(req.user.org_id);
   res.json(templates);
 });
 
-app.post('/api/templates', (req, res) => {
+app.post('/api/templates', authenticateToken, (req, res) => {
   const { name, content, category } = req.body;
-  if (!name || !content) {
-    return res.status(400).json({ error: 'Name and Content are required' });
-  }
-  const stmt = db.prepare('INSERT INTO templates (name, content, category) VALUES (?, ?, ?)');
-  const info = stmt.run(name, content, category || 'Marketing');
-  res.json({ id: info.lastInsertRowid, success: true });
+  const stmt = db.prepare('INSERT INTO templates (name, content, category, org_id) VALUES (?, ?, ?, ?)');
+  stmt.run(name, content, category || 'Marketing', req.user.org_id);
+  res.json({ success: true });
 });
 
 app.delete('/api/templates/:id', (req, res) => {
-  const stmt = db.prepare('DELETE FROM templates WHERE id = ?');
-  stmt.run(req.params.id);
+  db.prepare('DELETE FROM templates WHERE id = ?').run(req.params.id);
   res.json({ success: true });
+});
+
+app.get('/api/messages/recent', authenticateToken, (req, res) => {
+  const messages = db.prepare(`
+    SELECT m.*, c.name 
+    FROM messages m 
+    LEFT JOIN contacts c ON m.phone_number = c.phone_number AND m.org_id = c.org_id
+    WHERE m.org_id = ?
+    ORDER BY m.created_at DESC 
+    LIMIT 10
+  `).all(req.user.org_id);
+  res.json(messages);
+});
+
+// 8. Team Management
+app.get('/api/users', authenticateToken, (req, res) => {
+  const users = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE org_id = ?').all(req.user.org_id);
+  res.json(users);
+});
+
+app.post('/api/users', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only admins can manage team' });
+  const { name, email, password, role } = req.body;
+  try {
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    db.prepare('INSERT INTO users (org_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)')
+      .run(req.user.org_id, name, email, hashedPassword, role || 'member');
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Email already exists or invalid data' });
+  }
+});
+
+app.delete('/api/users/:id', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only admins can manage team' });
+  if (req.user.id == req.params.id) return res.status(400).json({ error: 'Cannot remove yourself' });
+  db.prepare('DELETE FROM users WHERE id = ? AND org_id = ?').run(req.params.id, req.user.org_id);
+  res.json({ success: true });
+});
+
+app.get('/api/audit-logs', authenticateToken, (req, res) => {
+  const logs = db.prepare(`
+    SELECT a.*, u.name as user_name 
+    FROM audit_logs a
+    LEFT JOIN users u ON a.user_id = u.id
+    WHERE a.org_id = ?
+    ORDER BY a.created_at DESC
+    LIMIT 100
+  `).all(req.user.org_id);
+  res.json(logs);
 });
 
 // --- WEBHOOK ENDPOINTS ---

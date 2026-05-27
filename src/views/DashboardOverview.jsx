@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 import { Users, Filter, CheckCircle2, MessageSquare, TrendingUp, ArrowUpRight } from 'lucide-react';
 
 const AreaChart = () => {
@@ -37,27 +37,34 @@ const AreaChart = () => {
 const DashboardOverview = () => {
   const [stats, setStats] = useState([
     { label: 'Total Contacts', value: '...', icon: Users, color: 'var(--color-primary)', trend: '+12%' },
-    { label: 'Active Campaigns', value: '...', icon: MegaphoneActivity, color: 'var(--color-warning)', trend: '+5%' },
-    { label: 'Chatbot Responses', value: '...', icon: MessageSquare, color: 'var(--color-success)', trend: '+24%' },
-    { label: 'Leads Closed', value: '...', icon: CheckCircle2, color: 'var(--color-primary-dark)', trend: '+8%' },
+    { label: 'Delivery Rate', value: '...', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
+    { label: 'Chatbot Activity', value: '...', icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
+    { label: 'Avg. Open Rate', value: '...', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
   ]);
+  const [recentMessages, setRecentMessages] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/dashboard`);
+        const res = await fetch(`${API_BASE_URL}/api/dashboard`, { headers: getAuthHeaders() });
         const data = await res.json();
         setStats([
           { label: 'Total Contacts', value: data.totalContacts, icon: Users, color: 'var(--color-primary)', trend: '+12%' },
-          { label: 'Active Campaigns', value: data.activeCampaigns, icon: MegaphoneActivity, color: 'var(--color-warning)', trend: '+5%' },
-          { label: 'Chatbot Responses', value: data.botResponses, icon: MessageSquare, color: 'var(--color-success)', trend: '+24%' },
-          { label: 'Leads Closed', value: data.leadsClosed, icon: CheckCircle2, color: 'var(--color-primary-dark)', trend: '+8%' },
+          { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
+          { label: 'Chatbot Activity', value: data.botResponses, icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
+          { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
         ]);
+
+        const msgRes = await fetch(`${API_BASE_URL}/api/messages/recent`, { headers: getAuthHeaders() });
+        const msgData = await msgRes.json();
+        setRecentMessages(msgData);
       } catch (e) {
         console.error(e);
       }
     };
     fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -113,23 +120,26 @@ const DashboardOverview = () => {
         <div className="card">
           <h2 className="mb-6">Real-time Activity</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="flex gap-4 items-center">
+            {recentMessages.map((msg, i) => (
+              <div key={msg.id} className="flex gap-4 items-center animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
                 <div style={{ position: 'relative' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'var(--color-surface-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
-                    <MessageSquare size={18} />
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: msg.direction === 'outbound' ? 'var(--color-primary-light)' : 'var(--color-surface-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: msg.direction === 'outbound' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
+                    {msg.direction === 'outbound' ? <ArrowUpRight size={18} /> : <MessageSquare size={18} />}
                   </div>
-                  <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)', border: '2px solid white' }} />
+                  {msg.direction === 'inbound' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)', border: '2px solid white' }} />}
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold">@user_0{i} replied</div>
-                  <div className="text-xs text-muted">WhatsApp • {i * 2}m ago</div>
+                <div className="flex-1 min-width-0">
+                  <div className="text-sm font-bold truncate">{msg.name || msg.phone_number}</div>
+                  <div className="text-xs text-muted truncate">{msg.content}</div>
                 </div>
-                <button className="text-xs font-bold" style={{ color: 'var(--color-primary)' }}>View</button>
+                <div className="text-[10px] text-muted whitespace-nowrap">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             ))}
+            {recentMessages.length === 0 && <div className="text-center py-10 text-muted italic text-xs">Waiting for new messages...</div>}
           </div>
-          <button className="w-full mt-6 btn-secondary py-2 text-sm font-bold">View All Activity</button>
+          <button className="w-full mt-6 btn-secondary py-2 text-sm font-bold" onClick={() => navigate('/inbox')}>View Shared Inbox</button>
         </div>
       </div>
     </div>

@@ -23,6 +23,8 @@ const CampaignCreate = () => {
     template: '',
     selectedIds: location.state?.selectedIds || []
   });
+  const [aiGoal, setAiGoal] = useState('');
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,6 +64,33 @@ const CampaignCreate = () => {
       console.error(e);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleGenerateAiPlan = async () => {
+    if (!aiGoal.trim()) return;
+    setIsGeneratingAi(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/ai/plan-campaign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: aiGoal })
+      });
+      const plan = await res.json();
+      
+      // Auto-fill form
+      setNewCampaign({
+        ...newCampaign,
+        name: plan.name,
+        template: plan.template
+      });
+      
+      alert("AI has suggested a plan! Review the 'Core Details' tab.");
+    } catch (e) {
+      console.error(e);
+      alert("AI was unable to generate a plan. Please try a different goal.");
+    } finally {
+      setIsGeneratingAi(false);
     }
   };
 
@@ -338,10 +367,26 @@ const CampaignCreate = () => {
              {/* Decorative element */}
              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
              
-             <h4 className="flex items-center gap-3 mb-6 font-bold text-lg"><Sparkles size={22} /> AI Strategy Tip</h4>
-             <p className="text-sm opacity-90 leading-relaxed font-medium">
-                "Personalized templates with customer names tend to have **3x higher click-through rates**. Our engine automatically populates <strong>{'{'}{'{'}name{'}'}{'}'}</strong> if included in your template."
+             <h4 className="flex items-center gap-3 mb-6 font-bold text-lg"><Sparkles size={22} /> AI Campaign Assistant</h4>
+             <p className="text-xs opacity-90 leading-relaxed font-medium mb-6">
+                Tell the AI your goal, and we'll generate the campaign name and message for you.
              </p>
+             <div className="flex flex-col gap-3">
+                <input 
+                  type="text" 
+                  placeholder="e.g. 20% off Summer Sale" 
+                  value={aiGoal}
+                  onChange={(e) => setAiGoal(e.target.value)}
+                  style={{ backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', fontSize: '12px' }}
+                />
+                <button 
+                  onClick={handleGenerateAiPlan}
+                  disabled={isGeneratingAi}
+                  className="w-full bg-white text-primary-dark py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                >
+                  {isGeneratingAi ? <Loader2 size={16} className="animate-spin" /> : <><Sparkles size={16} /> Generate Strategy</>}
+                </button>
+             </div>
           </div>
           <div className="card p-10 border-dashed border-2 border-slate-200 bg-transparent flex flex-col gap-6 shadow-none">
              <h4 className="flex items-center gap-3 text-main font-bold"><Settings size={22} className="text-muted" /> Best Practices</h4>

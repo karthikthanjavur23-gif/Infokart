@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Send, Copy, ThumbsUp, Save, Megaphone, Trash2, History, Zap, MessageSquare, Plus, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../api/config';
 
 const MarketingHelper = () => {
+  const navigate = useNavigate();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [messages, setMessages] = useState([
@@ -141,6 +143,23 @@ const MarketingHelper = () => {
     setTimeout(() => setCopySuccess(null), 2000);
   };
 
+  const handleSaveAsTemplate = async (content) => {
+    const name = window.prompt("Enter a name for this template:");
+    if (!name) return;
+    
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, content, category: 'Marketing' })
+      });
+      if (res.ok) alert("Template saved successfully!");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save template.");
+    }
+  };
+
   return (
     <div className="flex flex-col animate-fade-in" style={{ height: 'calc(100vh - var(--header-height) - 64px)', gap: '24px' }}>
       <div className="flex items-center justify-between">
@@ -200,8 +219,8 @@ const MarketingHelper = () => {
                         {copySuccess === idx ? <Check size={14} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} />} 
                         {copySuccess === idx ? 'Copied!' : 'Copy'}
                       </button>
-                      <button className="btn-secondary flex items-baseline gap-2 py-1 px-3 text-xs font-bold"><Save size={14} /> Template</button>
-                      <button className="btn-primary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" style={{ border: 'none' }}><Megaphone size={14} /> Campaign</button>
+                      <button className="btn-secondary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" onClick={() => handleSaveAsTemplate(msg.content)}><Save size={14} /> Save Template</button>
+                      <button className="btn-primary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" style={{ border: 'none' }} onClick={() => navigate('/campaigns/create')}><Megaphone size={14} /> Launch Campaign</button>
                     </div>
                   )}
                 </div>

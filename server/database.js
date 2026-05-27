@@ -11,8 +11,10 @@ const initDb = () => {
     CREATE TABLE IF NOT EXISTS contacts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
+      email TEXT,
       phone_number TEXT UNIQUE NOT NULL,
       tags TEXT,
+      notes TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);

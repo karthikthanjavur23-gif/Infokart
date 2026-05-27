@@ -91,3 +91,40 @@
   color: var(--color-primary);
 }
 
+.nav-section {
+  margin-bottom: 24px;
+}
+
+.nav-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 18px 12px;
+}
+
+.nav-badge {
+  font-size: 8px;
+  font-weight: 900;
+  padding: 2px 6px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-footer {
+  padding: 24px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.pro-card {
+  padding: 16px;
+  background: linear-gradient(135deg, var(--color-surface-soft) 0%, #ffffff 100%);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 12px;
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-sm);
+}
+
