@@ -62,15 +62,6 @@ async function getWhatsAppConfig(orgId) {
 async function askAI(prompt, systemInstruction = "You are a professional WhatsApp Marketing Assistant for InfoKart.") {
   if (!aiModel) {
     return "AI is currently in simulation mode. Please provide a valid GEMINI_API_KEY in the .env file.";
-}
-
-// Helper to Log System Actions
-function logAction(userId, orgId, action, details) {
-  try {
-    const stmt = db.prepare('INSERT INTO audit_logs (user_id, org_id, action, details) VALUES (?, ?, ?, ?)');
-    stmt.run(userId, orgId, action, JSON.stringify(details));
-  } catch (e) { console.error('Audit Log Error:', e); }
-}
   }
   try {
     const fullPrompt = `${systemInstruction}\n\nUser Request: ${prompt}`;
@@ -80,6 +71,14 @@ function logAction(userId, orgId, action, details) {
     console.error("Gemini Error:", error);
     return "Sorry, I'm having trouble thinking right now. Please try again later.";
   }
+}
+
+// Helper to Log System Actions
+function logAction(userId, orgId, action, details) {
+  try {
+    const stmt = db.prepare('INSERT INTO audit_logs (user_id, org_id, action, details) VALUES (?, ?, ?, ?)');
+    stmt.run(userId, orgId, action, JSON.stringify(details));
+  } catch (e) { console.error('Audit Log Error:', e); }
 }
 
 // --- API ENDPOINTS ---
