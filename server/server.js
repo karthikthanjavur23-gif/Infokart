@@ -109,7 +109,6 @@ app.post('/api/auth/login', (req, res) => {
 app.get('/api/auth/me', authenticateToken, (req, res) => {
   res.json(req.user);
 });
-
 (function seedAuth() {
   try {
     const orgCount = db.prepare('SELECT count(*) as count FROM organizations').get().count;
@@ -119,6 +118,11 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
       const hashedPassword = bcrypt.hashSync('admin123', 10);
       db.prepare('INSERT INTO users (org_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)')
         .run(orgId, 'Karthik', 'admin@infokart.in', hashedPassword, 'admin');
+    } else {
+      // Force update admin password to admin123 on startup
+      const hashedPassword = bcrypt.hashSync('admin123', 10);
+      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashedPassword, 'admin@infokart.in');
+      console.log('Force reset admin password to admin123 on startup.');
     }
   } catch (e) { console.error('Seed Error:', e.message); }
 })();
