@@ -111,18 +111,27 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 });
 (function seedAuth() {
   try {
-    const orgCount = db.prepare('SELECT count(*) as count FROM organizations').get().count;
-    if (orgCount === 0) {
-      const org = db.prepare('INSERT INTO organizations (name) VALUES (?)').run('Infokart Demo');
-      const orgId = org.lastInsertRowid;
-      const hashedPassword = bcrypt.hashSync('admin123', 10);
+    // 1. Ensure at least one organization exists
+    let org = db.prepare('SELECT id FROM organizations LIMIT 1').get();
+    let orgId;
+    if (!org) {
+      const result = db.prepare('INSERT INTO organizations (name) VALUES (?)').run('Infokart Demo');
+      orgId = result.lastInsertRowid;
+    } else {
+      orgId = org.id;
+    }
+
+    // 2. Ensure admin user exists and has the correct password
+    const adminUser = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@infokart.in');
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
+    
+    if (adminUser) {
+      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashedPassword, 'admin@infokart.in');
+      console.log('Force reset existing admin password to admin123.');
+    } else {
       db.prepare('INSERT INTO users (org_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)')
         .run(orgId, 'Karthik', 'admin@infokart.in', hashedPassword, 'admin');
-    } else {
-      // Force update admin password to admin123 on startup
-      const hashedPassword = bcrypt.hashSync('admin123', 10);
-      db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashedPassword, 'admin@infokart.in');
-      console.log('Force reset admin password to admin123 on startup.');
+      console.log('Created admin@infokart.in user with password admin123.');
     }
   } catch (e) { console.error('Seed Error:', e.message); }
 })();
