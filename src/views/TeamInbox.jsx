@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Phone, Sparkles, Loader2, Search, Filter, MoreVertical, MessageCircle } from 'lucide-react';
+import { Send, Phone, Sparkles, Loader2, Search, Filter, MoreVertical, MessageCircle, Users } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const TeamInbox = () => {
