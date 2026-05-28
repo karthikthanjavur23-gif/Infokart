@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleLeft, ToggleRight, LayoutTemplate, Workflow, Settings, MessageCircle, Send, X } from 'lucide-react';
 import { sendWhatsAppMessage } from '../api/whatsapp';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const WhatsAppChatbot = () => {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
@@ -19,7 +19,7 @@ const WhatsAppChatbot = () => {
 
   useEffect(() => {
     // Fetch configs
-    fetch(`${API_BASE_URL}/api/bot/config/whatsapp`)
+    fetch(`${API_BASE_URL}/api/bot/config/whatsapp`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         setAutoReplyEnabled(!!data.autoReplyEnabled);
@@ -28,9 +28,13 @@ const WhatsAppChatbot = () => {
       .catch(console.error);
 
     // Fetch bot options
-    fetch(`${API_BASE_URL}/api/bot/options/whatsapp`)
+    fetch(`${API_BASE_URL}/api/bot/options/whatsapp`, { headers: getAuthHeaders() })
       .then(r => r.json())
-      .then(data => setBotOptions(data))
+      .then(data => {
+        if (Array.isArray(data)) {
+          setBotOptions(data);
+        }
+      })
       .catch(console.error);
   }, []);
 
@@ -38,7 +42,7 @@ const WhatsAppChatbot = () => {
     try {
       await fetch(`${API_BASE_URL}/api/bot/options`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'whatsapp', options: updatedOptions })
       });
     } catch (e) {
@@ -49,11 +53,13 @@ const WhatsAppChatbot = () => {
   const handleSave = async () => {
     try {
       await fetch(`${API_BASE_URL}/api/bot/config`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', 
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'whatsapp', key: 'autoReplyEnabled', value: autoReplyEnabled })
       });
       await fetch(`${API_BASE_URL}/api/bot/config`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', 
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'whatsapp', key: 'greetingEnabled', value: greetingEnabled })
       });
       alert('Saved Successfully!');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, Send, Copy, ThumbsUp, Save, Megaphone, Trash2, History, Zap, MessageSquare, Plus, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const MarketingHelper = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const MarketingHelper = () => {
   useEffect(() => {
     const initFB = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/whatsapp/init-config`);
+        const res = await fetch(`${API_BASE_URL}/api/whatsapp/init-config`, { headers: getAuthHeaders() });
         const config = await res.json();
         setMetaConfig(config);
 
@@ -50,7 +50,7 @@ const MarketingHelper = () => {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/whatsapp/status`);
+      const res = await fetch(`${API_BASE_URL}/api/whatsapp/status`, { headers: getAuthHeaders() });
       const data = await res.json();
       setWsStatus(data);
     } catch (e) {
@@ -83,7 +83,7 @@ const MarketingHelper = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/whatsapp/embedded-signup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })
       });
       const data = await res.json();
@@ -98,7 +98,10 @@ const MarketingHelper = () => {
   const handleDisconnect = async () => {
     if (!window.confirm("Disconnect WhatsApp?")) return;
     try {
-      await fetch(`${API_BASE_URL}/api/whatsapp/disconnect`, { method: 'POST' });
+      await fetch(`${API_BASE_URL}/api/whatsapp/disconnect`, { 
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
       fetchStatus();
     } catch (e) {
       console.error(e);
@@ -124,7 +127,7 @@ const MarketingHelper = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/ai/generate`, {
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
@@ -150,7 +153,7 @@ const MarketingHelper = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/templates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, content, category: 'Marketing' })
       });
       if (res.ok) alert("Template saved successfully!");

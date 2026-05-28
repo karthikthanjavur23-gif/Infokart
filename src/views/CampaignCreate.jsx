@@ -5,7 +5,7 @@ import {
   Loader2, MessageCircle, CheckSquare, Square, Search, 
   CheckCircle2, Settings, Zap 
 } from 'lucide-react';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const CampaignCreate = () => {
   const navigate = useNavigate();
@@ -29,14 +29,18 @@ const CampaignCreate = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const tempRes = await fetch(`${API_BASE_URL}/api/templates`);
+        const tempRes = await fetch(`${API_BASE_URL}/api/templates`, { headers: getAuthHeaders() });
         const tempData = await tempRes.json();
-        setTemplates(tempData);
-        if (tempData.length > 0) setNewCampaign(prev => ({ ...prev, template: tempData[0].name }));
+        if (Array.isArray(tempData)) {
+          setTemplates(tempData);
+          if (tempData.length > 0) setNewCampaign(prev => ({ ...prev, template: tempData[0].name }));
+        }
 
-        const contactRes = await fetch(`${API_BASE_URL}/api/contacts`);
+        const contactRes = await fetch(`${API_BASE_URL}/api/contacts`, { headers: getAuthHeaders() });
         const contactData = await contactRes.json();
-        setContacts(contactData);
+        if (Array.isArray(contactData)) {
+          setContacts(contactData);
+        }
       } catch (e) {
         console.error(e);
       }
@@ -49,7 +53,7 @@ const CampaignCreate = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/campaigns`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newCampaign.name,
           channel: newCampaign.channel,
@@ -73,7 +77,7 @@ const CampaignCreate = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/ai/plan-campaign`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal: aiGoal })
       });
       const plan = await res.json();

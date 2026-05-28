@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, MessageCircle, Megaphone, Sparkles, Filter, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const BulkCampaigns = () => {
   const navigate = useNavigate();
@@ -10,9 +10,11 @@ const BulkCampaigns = () => {
 
   const fetchData = async () => {
     try {
-      const campRes = await fetch(`${API_BASE_URL}/api/campaigns`);
+      const campRes = await fetch(`${API_BASE_URL}/api/campaigns`, { headers: getAuthHeaders() });
       const campData = await campRes.json();
-      setCampaigns(campData);
+      if (Array.isArray(campData)) {
+        setCampaigns(campData);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -136,7 +138,10 @@ const BulkCampaigns = () => {
                         title="Launch Campaign"
                         onClick={async () => { 
                           try {
-                            const res = await fetch(`${API_BASE_URL}/api/campaigns/${camp.id}/send`, { method: 'POST' });
+                            const res = await fetch(`${API_BASE_URL}/api/campaigns/${camp.id}/send`, { 
+                              method: 'POST',
+                              headers: getAuthHeaders()
+                            });
                             if (res.ok) fetchData();
                           } catch (err) { console.error(err); }
                         }}

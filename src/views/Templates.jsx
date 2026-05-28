@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutTemplate, Plus, Trash2, Search, X, Smartphone, Sparkles, Wand2, Loader2 } from 'lucide-react';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const Templates = () => {
   const navigate = useNavigate();
@@ -13,9 +13,11 @@ const Templates = () => {
 
   const fetchTemplates = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/templates`);
+      const res = await fetch(`${API_BASE_URL}/api/templates`, { headers: getAuthHeaders() });
       const data = await res.json();
-      setTemplates(data);
+      if (Array.isArray(data)) {
+        setTemplates(data);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -30,7 +32,7 @@ const Templates = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/templates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(newTemplate),
       });
       if (res.ok) {
@@ -45,7 +47,10 @@ const Templates = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this template?')) return;
     try {
-      await fetch(`${API_BASE_URL}/api/templates/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/templates/${id}`, { 
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
       fetchTemplates();
     } catch (e) {
       console.error(e);
@@ -62,7 +67,7 @@ const Templates = () => {
       
       const res = await fetch(`${API_BASE_URL}/api/ai/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
@@ -70,7 +75,7 @@ const Templates = () => {
       if (window.confirm(`AI Suggestion:\n\n${data.response}\n\nWould you like to apply this?`)) {
         await fetch(`${API_BASE_URL}/api/templates`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...template, content: data.response })
         });
         fetchTemplates();

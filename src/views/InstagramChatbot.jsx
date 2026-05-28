@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleLeft, ToggleRight, LayoutTemplate, Workflow, Settings } from 'lucide-react';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const InstagramChatbot = () => {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const [storyMentionsEnabled, setStoryMentionsEnabled] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/bot/config/instagram`)
+    fetch(`${API_BASE_URL}/api/bot/config/instagram`, { headers: getAuthHeaders() })
       .then(r => r.json())
       .then(data => {
         setAutoReplyEnabled(!!data.autoReplyEnabled);
@@ -19,11 +19,13 @@ const InstagramChatbot = () => {
   const handleSave = async () => {
     try {
       await fetch(`${API_BASE_URL}/api/bot/config`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', 
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'instagram', key: 'autoReplyEnabled', value: autoReplyEnabled })
       });
       await fetch(`${API_BASE_URL}/api/bot/config`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', 
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ platform: 'instagram', key: 'storyMentionsEnabled', value: storyMentionsEnabled })
       });
       alert('Saved Successfully!');

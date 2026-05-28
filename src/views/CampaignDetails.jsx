@@ -4,7 +4,7 @@ import {
   ChevronLeft, Megaphone, Calendar, Users, Target, 
   CheckCircle2, AlertCircle, BarChart3, Mail, MessageCircle, MoreVertical, Loader2, Zap
 } from 'lucide-react';
-import { API_BASE_URL } from '../api/config';
+import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
 const CampaignDetails = () => {
   const { id } = useParams();
@@ -15,13 +15,15 @@ const CampaignDetails = () => {
 
   const fetchCampaignData = async () => {
     try {
-      const campRes = await fetch(`${API_BASE_URL}/api/campaigns/${id}`);
+      const campRes = await fetch(`${API_BASE_URL}/api/campaigns/${id}`, { headers: getAuthHeaders() });
       const campData = await campRes.json();
       setCampaign(campData);
 
-      const contactRes = await fetch(`${API_BASE_URL}/api/campaigns/${id}/contacts`);
+      const contactRes = await fetch(`${API_BASE_URL}/api/campaigns/${id}/contacts`, { headers: getAuthHeaders() });
       const contactData = await contactRes.json();
-      setContacts(contactData);
+      if (Array.isArray(contactData)) {
+        setContacts(contactData);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -44,7 +46,10 @@ const CampaignDetails = () => {
 
   const handleLaunch = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/campaigns/${id}/send`, { method: 'POST' });
+      const res = await fetch(`${API_BASE_URL}/api/campaigns/${id}/send`, { 
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
       if (data.success) {
         fetchCampaignData();
