@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../api/config';
 import { Zap, LogIn, Mail, Lock, Loader2 } from 'lucide-react';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, token } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('admin@infokart.in');
   const [password, setPassword] = useState('admin123');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (token) {
+      navigate('/dashboard');
+    }
+  }, [token, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,6 +34,7 @@ const Login = () => {
       
       if (res.ok) {
         login(data.user, data.token);
+        navigate('/dashboard');
       } else {
         setError(data.error || 'Login failed');
       }
