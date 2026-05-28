@@ -78,30 +78,17 @@ const Settings = () => {
     }
     const redirectUri = window.location.origin + window.location.pathname;
 
-    // Launch using the official Meta JS SDK (required for Business Login)
-    window.FB.login((response) => {
-      if (response.authResponse) {
-        // The SDK returns the 'code' inside the authResponse if using the Business Login flow
-        const code = response.authResponse.code;
-        if (code) {
-          console.log("[DEBUG] SDK login successful, code received");
-          completeSignup(code, redirectUri);
-        } else {
-          console.error("[ERROR] SDK login succeeded but no code was returned. Ensure config_id is correct.");
-        }
-      } else {
-        console.log("[INFO] User cancelled login or did not fully authorize.");
-      }
-    }, {
-      config_id: metaConfig.configId,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: {
-        feature: "whatsapp_embedded_signup",
-        sessionInfoVersion: 3,
-        setup: {}
-      }
-    });
+    // Build the Meta-hosted onboarding URL
+    const extras = encodeURIComponent(JSON.stringify({
+      version: "v4",
+      sessionInfoVersion: "3",
+      featureType: "whatsapp_business_app_onboarding"
+    }));
+
+    const signupUrl = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${metaConfig.appId}&config_id=${metaConfig.configId}&extras=${extras}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    // Redirect to Meta-hosted landing page (bypasses JS SDK BSP restrictions)
+    window.location.href = signupUrl;
   };
 
   const completeSignup = async (code, manualRedirectUri) => {

@@ -59,24 +59,21 @@ const MarketingHelper = () => {
   };
 
   const handleLaunchSignup = () => {
-    if (!window.FB) return alert("Facebook SDK not loaded yet.");
     if (!metaConfig.appId || !metaConfig.configId) {
       return alert("Meta App ID or Configuration ID is missing. Please check your .env file on the server.");
     }
     
-    window.FB.login((response) => {
-      if (response.authResponse) {
-        const code = response.authResponse.code;
-        completeSignup(code);
-      } else {
-        console.log('User cancelled login or did not fully authorize.');
-      }
-    }, {
-      config_id: metaConfig.configId,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { setup: {} }
-    });
+    const redirectUri = window.location.origin + "/settings";
+    
+    const extras = encodeURIComponent(JSON.stringify({
+      version: "v4",
+      sessionInfoVersion: "3",
+      featureType: "whatsapp_business_app_onboarding"
+    }));
+
+    const signupUrl = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${metaConfig.appId}&config_id=${metaConfig.configId}&extras=${extras}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+    window.location.href = signupUrl;
   };
 
   const completeSignup = async (code) => {
