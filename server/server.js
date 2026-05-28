@@ -766,6 +766,22 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+app.get('/api/debug-users', (req, res) => {
+  try {
+    const users = db.prepare('SELECT id, name, email, password, role FROM users').all();
+    const result = users.map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      passwordMatchesAdmin123: bcrypt.compareSync('admin123', u.password)
+    }));
+    res.json({ success: true, users: result });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 // All other routes should serve the frontend index.html
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../dist', 'index.html'));
