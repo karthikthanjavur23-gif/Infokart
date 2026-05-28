@@ -76,6 +76,7 @@ const Settings = () => {
     if (!metaConfig.appId || !metaConfig.configId) {
       return alert("Meta App credentials are missing in your .env file. Please provide them to continue.");
     }
+    const redirectUri = window.location.origin + window.location.pathname;
 
     // Launch using the official Meta JS SDK (required for Business Login)
     window.FB.login((response) => {

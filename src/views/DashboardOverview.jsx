@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getAuthHeaders } from '../api/config';
 import { Users, Filter, CheckCircle2, MessageSquare, TrendingUp, ArrowUpRight } from 'lucide-react';
 
@@ -35,6 +36,7 @@ const AreaChart = () => {
 };
 
 const DashboardOverview = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState([
     { label: 'Total Contacts', value: '...', icon: Users, color: 'var(--color-primary)', trend: '+12%' },
     { label: 'Delivery Rate', value: '...', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },

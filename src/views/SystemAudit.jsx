@@ -6,17 +6,17 @@ const SystemAudit = () => {
   const [logs, setLogs] = useState([]);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
-
-  const fetchLogs = async () => {
+  async function fetchLogs() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/audit-logs`, { headers: getAuthHeaders() });
       const data = await res.json();
       setLogs(data);
     } catch (e) { console.error(e); }
-  };
+  }
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
 
   const filteredLogs = logs.filter(log => 
     log.action.toLowerCase().includes(search.toLowerCase()) || 
