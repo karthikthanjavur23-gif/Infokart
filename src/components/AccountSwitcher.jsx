@@ -11,8 +11,13 @@ const AccountSwitcher = () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/whatsapp/accounts`, { headers: getAuthHeaders() });
       const data = await res.json();
-      setAccounts(data);
-      setActiveAccount(data.find(a => a.is_active));
+      if (Array.isArray(data)) {
+        setAccounts(data);
+        setActiveAccount(data.find(a => a.is_active));
+      } else {
+        setAccounts([]);
+        setActiveAccount(null);
+      }
     } catch (e) { console.error(e); }
   };
 

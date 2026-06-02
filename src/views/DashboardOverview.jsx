@@ -50,16 +50,22 @@ const DashboardOverview = () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/dashboard`, { headers: getAuthHeaders() });
         const data = await res.json();
-        setStats([
-          { label: 'Total Contacts', value: data.totalContacts, icon: Users, color: 'var(--color-primary)', trend: '+12%' },
-          { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
-          { label: 'Chatbot Activity', value: data.botResponses, icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
-          { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
-        ]);
+        if (data && !data.error) {
+          setStats([
+            { label: 'Total Contacts', value: data.totalContacts, icon: Users, color: 'var(--color-primary)', trend: '+12%' },
+            { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
+            { label: 'Chatbot Activity', value: data.botResponses, icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
+            { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
+          ]);
+        }
 
         const msgRes = await fetch(`${API_BASE_URL}/api/messages/recent`, { headers: getAuthHeaders() });
         const msgData = await msgRes.json();
-        setRecentMessages(msgData);
+        if (Array.isArray(msgData)) {
+          setRecentMessages(msgData);
+        } else {
+          setRecentMessages([]);
+        }
       } catch (e) {
         console.error(e);
       }
