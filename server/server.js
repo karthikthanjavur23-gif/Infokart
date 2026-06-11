@@ -210,15 +210,38 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
     let wabaId = wabaScope?.target_ids?.[0];
 
     if (!wabaId) {
-      // Granular scopes exist but without target_ids — fetch WABAs directly
-      fs.appendFileSync('signup_debug.log', `\n[INFO] No target_ids in granular_scopes, fetching via /me/whatsapp_business_accounts\n`);
-      
-      const wabaRes = await axios.get(`https://graph.facebook.com/v22.0/me/whatsapp_business_accounts`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
-      fs.appendFileSync('signup_debug.log', `\n[WABA_ACCOUNTS] ${JSON.stringify(wabaRes.data)}\n`);
-      
-      wabaId = wabaRes.data?.data?.[0]?.id;
+      // Granular scopes exist but without target_ids — fetch WABAs by querying associated businesses
+      fs.appendFileSync('signup_debug.log', `\n[INFO] No target_ids in granular_scopes, fetching via businesses fallback\n`);
+      try {
+        const businessesRes = await axios.get(`https://graph.facebook.com/v22.0/me/businesses`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const businesses = businessesRes.data?.data || [];
+        for (const business of businesses) {
+          // Try owned_whatsapp_business_accounts
+          const wabaRes = await axios.get(`https://graph.facebook.com/v22.0/${business.id}/owned_whatsapp_business_accounts`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const accounts = wabaRes.data?.data || [];
+          if (accounts.length > 0) {
+            wabaId = accounts[0].id;
+            break;
+          }
+          
+          // Also try client_whatsapp_business_accounts
+          const clientWabaRes = await axios.get(`https://graph.facebook.com/v22.0/${business.id}/client_whatsapp_business_accounts`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          const clientAccounts = clientWabaRes.data?.data || [];
+          if (clientAccounts.length > 0) {
+            wabaId = clientAccounts[0].id;
+            break;
+          }
+        }
+      } catch (fallbackError) {
+        console.error("Fallback WABA retrieval failed:", fallbackError.response?.data || fallbackError.message);
+        fs.appendFileSync('signup_debug.log', `\n[ERROR] Fallback WABA failed: ${JSON.stringify(fallbackError.response?.data || fallbackError.message)}\n`);
+      }
     }
 
     if (!wabaId) throw new Error("No WhatsApp Business Account found. Please complete the full signup flow.");
