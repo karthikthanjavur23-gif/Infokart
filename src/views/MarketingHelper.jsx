@@ -78,10 +78,11 @@ const MarketingHelper = () => {
 
   const completeSignup = async (code) => {
     try {
+      const redirectUri = window.location.origin + "/settings";
       const res = await fetch(`${API_BASE_URL}/api/whatsapp/embedded-signup`, {
         method: 'POST',
         headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code, redirectUri })
       });
       const data = await res.json();
       if (data.success) {

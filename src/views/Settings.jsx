@@ -51,7 +51,7 @@ const Settings = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (code) {
-      const redirectUri = (window.location.origin + window.location.pathname).replace(/\/$/, "");
+      const redirectUri = window.location.origin + "/settings";
       window.history.replaceState({}, document.title, redirectUri);
       completeSignup(code, redirectUri);
     }
@@ -76,7 +76,7 @@ const Settings = () => {
     if (!metaConfig.appId || !metaConfig.configId) {
       return alert("Meta App credentials are missing in your .env file. Please provide them to continue.");
     }
-    const redirectUri = window.location.origin + window.location.pathname;
+    const redirectUri = window.location.origin + "/settings";
 
     // Build the Meta-hosted onboarding URL
     const extras = encodeURIComponent(JSON.stringify({
@@ -93,7 +93,7 @@ const Settings = () => {
 
   const completeSignup = async (code, manualRedirectUri) => {
     try {
-      const redirectUri = manualRedirectUri || (window.location.origin + window.location.pathname);
+      const redirectUri = manualRedirectUri || (window.location.origin + "/settings");
       const res = await fetch(`${API_BASE_URL}/api/whatsapp/embedded-signup`, {
         method: 'POST',
         headers: getAuthHeaders(),
