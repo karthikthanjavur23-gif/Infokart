@@ -71,7 +71,7 @@ const MarketingHelper = () => {
       featureType: "whatsapp_business_app_onboarding"
     }));
 
-    const signupUrl = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${metaConfig.appId}&config_id=${metaConfig.configId}&extras=${extras}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const signupUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${metaConfig.appId}&config_id=${metaConfig.configId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=whatsapp_business_management,whatsapp_business_messaging&extras=${extras}`;
 
     window.location.href = signupUrl;
   };

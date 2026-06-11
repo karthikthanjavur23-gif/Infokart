@@ -78,16 +78,16 @@ const Settings = () => {
     }
     const redirectUri = window.location.origin + "/settings";
 
-    // Build the Meta-hosted onboarding URL
+    // Build the Meta-hosted onboarding URL config
     const extras = encodeURIComponent(JSON.stringify({
       version: "v4",
       sessionInfoVersion: "3",
       featureType: "whatsapp_business_app_onboarding"
     }));
 
-    const signupUrl = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${metaConfig.appId}&config_id=${metaConfig.configId}&extras=${extras}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const signupUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${metaConfig.appId}&config_id=${metaConfig.configId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=whatsapp_business_management,whatsapp_business_messaging&extras=${extras}`;
 
-    // Redirect to Meta-hosted landing page (bypasses JS SDK BSP restrictions)
+    // Redirect to Meta OAuth dialog (bypasses JS SDK restrictions and handles redirection automatically)
     window.location.href = signupUrl;
   };
 
