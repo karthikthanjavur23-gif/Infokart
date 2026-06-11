@@ -160,6 +160,19 @@ app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
 
 const fs = require('fs');
 
+app.get('/api/whatsapp/debug-log', (req, res) => {
+  try {
+    if (fs.existsSync('signup_debug.log')) {
+      const content = fs.readFileSync('signup_debug.log', 'utf8');
+      res.type('text/plain').send(content);
+    } else {
+      res.send("No debug log found yet.");
+    }
+  } catch (e) {
+    res.status(500).send("Error reading log: " + e.message);
+  }
+});
+
 app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) => {
   const { code, redirectUri } = req.body;
   const orgId = req.user.org_id;
