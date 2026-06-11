@@ -299,6 +299,113 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
   }
 });
 
+app.post('/api/whatsapp/register-phone', authenticateToken, async (req, res) => {
+  const { countryCode, phoneNumber, verifiedName } = req.body;
+  const wabaId = process.env.WABA_ID;
+  const accessToken = process.env.META_ACCESS_TOKEN;
+
+  if (!wabaId || !accessToken) {
+    return res.status(400).json({ error: 'Server Meta configurations are missing. Please add WABA_ID and META_ACCESS_TOKEN in env.' });
+  }
+
+  if (!countryCode || !phoneNumber || !verifiedName) {
+    return res.status(400).json({ error: 'Missing required fields: countryCode, phoneNumber, verifiedName' });
+  }
+
+  try {
+    // 1. Add phone number to WABA
+    console.log(`[INFO] Adding phone number +${countryCode}${phoneNumber} to WABA ${wabaId}`);
+    const addRes = await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        cc: countryCode.replace('+', ''),
+        phone_number: phoneNumber,
+        verified_name: verifiedName
+      }
+    });
+
+    const phoneNumberId = addRes.data.id;
+    console.log(`[INFO] Phone number added successfully. ID: ${phoneNumberId}. Requesting OTP...`);
+
+    // 2. Request Verification OTP Code
+    await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        pin: '123456',
+        code_method: 'SMS',
+        language: 'en'
+      }
+    });
+
+    res.json({ success: true, phoneNumberId });
+  } catch (error) {
+    const errData = error.response?.data || error.message;
+    console.error('[ERROR] Register phone failed:', errData);
+    res.status(500).json({ error: 'Failed to add/register phone number', details: errData });
+  }
+});
+
+app.post('/api/whatsapp/verify-phone', authenticateToken, async (req, res) => {
+  const { phoneNumberId, code, verifiedName, countryCode, phoneNumber } = req.body;
+  const wabaId = process.env.WABA_ID;
+  const accessToken = process.env.META_ACCESS_TOKEN;
+
+  if (!phoneNumberId || !code) {
+    return res.status(400).json({ error: 'Missing required fields: phoneNumberId, code' });
+  }
+
+  try {
+    // 1. Verify OTP code
+    console.log(`[INFO] Verifying OTP code for phone ID ${phoneNumberId}`);
+    await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v22.0/${phoneNumberId}/verify`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        code: code
+      }
+    });
+
+    console.log('[INFO] OTP verification successful. Saving to database...');
+
+    // 2. Save to DB
+    const stmt = db.prepare(`
+      INSERT INTO whatsapp_settings (org_id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, status, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, 'Connected', 1)
+    `);
+    stmt.run(
+      req.user.org_id,
+      wabaId,
+      phoneNumberId,
+      accessToken,
+      `+${countryCode}${phoneNumber}`,
+      verifiedName
+    );
+
+    logAction(req.user.id, req.user.org_id, 'CONNECT_WHATSAPP', { method: 'DIRECT_OTP', phone: `+${countryCode}${phoneNumber}` });
+
+    res.json({ success: true });
+  } catch (error) {
+    const errData = error.response?.data || error.message;
+    console.error('[ERROR] Verify phone failed:', errData);
+    res.status(500).json({ error: 'Failed to verify phone number', details: errData });
+  }
+});
+
 app.post('/api/whatsapp/manual-config', authenticateToken, (req, res) => {
   const { accessToken, phoneNumberId, wabaId, verifiedName, nickname } = req.body;
   

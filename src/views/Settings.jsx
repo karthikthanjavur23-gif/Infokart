@@ -15,6 +15,16 @@ const Settings = () => {
     verifiedName: ''
   });
 
+  const [showDirect, setShowDirect] = useState(false);
+  const [directStep, setDirectStep] = useState(1);
+  const [directData, setDirectData] = useState({
+    countryCode: '91',
+    phoneNumber: '',
+    verifiedName: '',
+    phoneNumberId: '',
+    code: ''
+  });
+
   useEffect(() => {
     const initFB = async () => {
       try {
@@ -109,6 +119,76 @@ const Settings = () => {
     } catch (e) {
       console.error(e);
       alert("An error occurred during signup.");
+    }
+  };
+
+  const handleDirectRegister = async (e) => {
+    e.preventDefault();
+    if (!directData.countryCode || !directData.phoneNumber || !directData.verifiedName) {
+      return alert("Please fill in all fields.");
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/whatsapp/register-phone`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          countryCode: directData.countryCode,
+          phoneNumber: directData.phoneNumber,
+          verifiedName: directData.verifiedName
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || (data.details?.error?.message) || "Failed to register number");
+      
+      setDirectData({ ...directData, phoneNumberId: data.phoneNumberId });
+      setDirectStep(2);
+      alert("Verification code (OTP) has been sent to your WhatsApp number via SMS.");
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "An error occurred during registration.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDirectVerify = async (e) => {
+    e.preventDefault();
+    if (!directData.code) {
+      return alert("Please enter the verification code.");
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/whatsapp/verify-phone`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phoneNumberId: directData.phoneNumberId,
+          code: directData.code,
+          verifiedName: directData.verifiedName,
+          countryCode: directData.countryCode,
+          phoneNumber: directData.phoneNumber
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || (data.details?.error?.message) || "Failed to verify number");
+      
+      setShowDirect(false);
+      setDirectStep(1);
+      setDirectData({ countryCode: '91', phoneNumber: '', verifiedName: '', phoneNumberId: '', code: '' });
+      fetchStatus();
+      alert("WhatsApp successfully connected!");
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Invalid verification code.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -271,26 +351,73 @@ const Settings = () => {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-4">
-                        <button 
-                          className="btn-primary flex items-center justify-center gap-3 py-4 px-10 shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all font-bold" 
-                          style={{ backgroundColor: '#1877f2', border: 'none', fontSize: '15px' }}
-                          onClick={handleLaunchSignup}
-                        >
-                          {(!metaConfig.appId || !metaConfig.configId) ? (
-                            <span className="opacity-50 text-[11px] uppercase tracking-tighter">Configuration Missing</span>
-                          ) : (
-                            <><Plus size={20} strokeWidth={3} /> Connect via Facebook</>
-                          )}
-                        </button>
-                        
-                        {!showManual ? (
-                          <button 
-                            className="text-[11px] font-black text-muted uppercase tracking-widest hover:text-primary transition-colors text-center"
-                            onClick={() => setShowManual(true)}
-                          >
-                            Or Connect Manually (Non-BSP)
-                          </button>
-                        ) : (
+                        {/* Direct OTP Form */}
+                        {showDirect ? (
+                          <div className="p-8 bg-white rounded-[24px] border border-slate-200 shadow-xl animate-slide-up">
+                            <h4 className="text-sm font-black mb-6 uppercase tracking-widest text-main">Direct OTP Verification</h4>
+                            
+                            {directStep === 1 ? (
+                              <form onSubmit={handleDirectRegister}>
+                                <div className="grid grid-cols-4 gap-3">
+                                  <div className="form-group col-span-1">
+                                    <label className="label">Code</label>
+                                    <input 
+                                      type="text" 
+                                      placeholder="91" 
+                                      value={directData.countryCode}
+                                      onChange={(e) => setDirectData({...directData, countryCode: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="form-group col-span-3">
+                                    <label className="label">WhatsApp Phone Number</label>
+                                    <input 
+                                      type="text" 
+                                      placeholder="9876543210" 
+                                      value={directData.phoneNumber}
+                                      onChange={(e) => setDirectData({...directData, phoneNumber: e.target.value})}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div className="form-group">
+                                  <label className="label">Display Business Name</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="Infowaves" 
+                                    value={directData.verifiedName}
+                                    onChange={(e) => setDirectData({...directData, verifiedName: e.target.value})}
+                                    required
+                                  />
+                                </div>
+
+                                <div className="flex gap-3 mt-4">
+                                  <button type="submit" className="btn-primary flex-1 py-3 text-xs uppercase tracking-widest">Send OTP Code</button>
+                                  <button type="button" onClick={() => setShowDirect(false)} className="btn-secondary py-3 text-xs uppercase tracking-widest">Cancel</button>
+                                </div>
+                              </form>
+                            ) : (
+                              <form onSubmit={handleDirectVerify}>
+                                <div className="form-group">
+                                  <label className="label">6-Digit Verification Code (SMS OTP)</label>
+                                  <input 
+                                    type="text" 
+                                    placeholder="123456" 
+                                    value={directData.code}
+                                    onChange={(e) => setDirectData({...directData, code: e.target.value})}
+                                    required
+                                  />
+                                </div>
+
+                                <div className="flex gap-3 mt-4">
+                                  <button type="submit" className="btn-primary flex-1 py-3 text-xs uppercase tracking-widest">Verify & Connect</button>
+                                  <button type="button" onClick={() => setDirectStep(1)} className="btn-secondary py-3 text-xs uppercase tracking-widest">Back</button>
+                                </div>
+                              </form>
+                            )}
+                          </div>
+                        ) : showManual ? (
                           <form onSubmit={handleManualConnect} className="mt-6 p-8 bg-white rounded-[24px] border border-slate-200 shadow-xl animate-slide-up">
                             <h4 className="text-sm font-black mb-6 uppercase tracking-widest text-main">Manual Configuration</h4>
                             
@@ -343,6 +470,31 @@ const Settings = () => {
                               <button type="button" onClick={() => setShowManual(false)} className="btn-secondary py-3 text-xs uppercase tracking-widest">Cancel</button>
                             </div>
                           </form>
+                        ) : (
+                          <div className="flex flex-col gap-4">
+                            <button 
+                              className="btn-primary flex items-center justify-center gap-3 py-4 px-10 shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-all font-bold" 
+                              style={{ backgroundColor: '#10b981', border: 'none', fontSize: '15px' }}
+                              onClick={() => { setShowDirect(true); setDirectStep(1); }}
+                            >
+                              <Plus size={20} strokeWidth={3} /> Direct Connect with OTP
+                            </button>
+
+                            <button 
+                              className="btn-secondary flex items-center justify-center gap-3 py-4 px-10 hover:scale-[1.02] transition-all font-bold" 
+                              style={{ border: '1px solid #cbd5e1', fontSize: '15px', color: '#475569' }}
+                              onClick={handleLaunchSignup}
+                            >
+                              Connect via Facebook Onboarding
+                            </button>
+                            
+                            <button 
+                              className="text-[11px] font-black text-muted uppercase tracking-widest hover:text-primary transition-colors text-center"
+                              onClick={() => setShowManual(true)}
+                            >
+                              Or Connect Manually (Token/IDs)
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}
