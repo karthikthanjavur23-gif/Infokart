@@ -257,7 +257,13 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
       }
     }
 
-    if (!wabaId) throw new Error("No WhatsApp Business Account found. Please complete the full signup flow.");
+    if (!wabaId) {
+      return res.status(400).json({
+        error: "Failed to complete signup",
+        details: "No WhatsApp Business Account found. Please complete the full signup flow.",
+        debugTokenData: debugRes.data
+      });
+    }
 
     fs.appendFileSync('signup_debug.log', `\n[WABA] Found WABA ID: ${wabaId}\n`);
 
