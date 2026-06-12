@@ -890,20 +890,384 @@ app.post('/api/ai/plan-campaign', async (req, res) => {
 
 // 7. Message Templates
 app.get('/api/templates', authenticateToken, (req, res) => {
-  const templates = db.prepare('SELECT * FROM templates WHERE org_id = ? ORDER BY created_at DESC').all(req.user.org_id);
-  res.json(templates);
+  const { status, category, language, search } = req.query;
+  let query = 'SELECT * FROM whatsapp_templates WHERE org_id = ?';
+  const params = [req.user.org_id];
+
+  if (status && status !== 'ALL') {
+    query += ' AND status = ?';
+    params.push(status);
+  }
+  if (category && category !== 'ALL') {
+    query += ' AND category = ?';
+    params.push(category);
+  }
+  if (language && language !== 'ALL') {
+    query += ' AND language = ?';
+    params.push(language);
+  }
+  if (search) {
+    query += ' AND template_name LIKE ?';
+    params.push(`%${search}%`);
+  }
+
+  query += ' ORDER BY created_at DESC';
+
+  try {
+    const wppTemplates = db.prepare(query).all(...params);
+    // Add backward compatibility fields for campaign selection
+    const formatted = wppTemplates.map(t => ({
+      ...t,
+      name: t.template_name,
+      content: t.body_content
+    }));
+    res.json(formatted);
+  } catch (error) {
+    console.error("Fetch templates error:", error);
+    res.status(500).json({ error: "Failed to fetch templates" });
+  }
 });
 
-app.post('/api/templates', authenticateToken, (req, res) => {
-  const { name, content, category } = req.body;
-  const stmt = db.prepare('INSERT INTO templates (name, content, category, org_id) VALUES (?, ?, ?, ?)');
-  stmt.run(name, content, category || 'Marketing', req.user.org_id);
-  res.json({ success: true });
+app.get('/api/templates/:id', authenticateToken, (req, res) => {
+  try {
+    const template = db.prepare('SELECT * FROM whatsapp_templates WHERE id = ? AND org_id = ?').get(req.params.id, req.user.org_id);
+    if (!template) return res.status(404).json({ error: "Template not found" });
+    
+    // Add backward compatibility fields
+    res.json({
+      ...template,
+      name: template.template_name,
+      content: template.body_content
+    });
+  } catch (error) {
+    console.error("Fetch template details error:", error);
+    res.status(500).json({ error: "Failed to fetch template" });
+  }
 });
 
-app.delete('/api/templates/:id', (req, res) => {
-  db.prepare('DELETE FROM templates WHERE id = ?').run(req.params.id);
-  res.json({ success: true });
+app.post('/api/templates/create', authenticateToken, async (req, res) => {
+  const { template_name, category, language, header_type, header_content, body_content, footer_content, buttons_json } = req.body;
+
+  if (!template_name || !body_content || !category || !language) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Validate name slug
+  if (!/^[a-z0-9_]+$/.test(template_name)) {
+    return res.status(400).json({ error: "Template name must be lowercase, alphanumeric and underscores only (e.g. summer_offer_2026)." });
+  }
+
+  try {
+    const wConfig = await getWhatsAppConfig(req.user.org_id);
+    const wabaId = wConfig?.wabaId || null;
+
+    const stmt = db.prepare(`
+      INSERT INTO whatsapp_templates (org_id, waba_id, template_name, category, language, header_type, header_content, body_content, footer_content, buttons_json, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT')
+      ON CONFLICT(org_id, template_name) DO UPDATE SET
+        category = excluded.category,
+        language = excluded.language,
+        header_type = excluded.header_type,
+        header_content = excluded.header_content,
+        body_content = excluded.body_content,
+        footer_content = excluded.footer_content,
+        buttons_json = excluded.buttons_json,
+        status = 'DRAFT',
+        updated_at = CURRENT_TIMESTAMP
+    `);
+
+    const info = stmt.run(
+      req.user.org_id,
+      wabaId,
+      template_name,
+      category.toUpperCase(),
+      language,
+      header_type || 'NONE',
+      header_content || null,
+      body_content,
+      footer_content || null,
+      buttons_json ? JSON.stringify(buttons_json) : null
+    );
+
+    res.json({ success: true, id: info.lastInsertRowid });
+  } catch (error) {
+    console.error("Create template error:", error);
+    res.status(500).json({ error: "Failed to save template draft" });
+  }
+});
+
+app.put('/api/templates/:id', authenticateToken, async (req, res) => {
+  const { template_name, category, language, header_type, header_content, body_content, footer_content, buttons_json } = req.body;
+
+  try {
+    const template = db.prepare('SELECT * FROM whatsapp_templates WHERE id = ? AND org_id = ?').get(req.params.id, req.user.org_id);
+    if (!template) return res.status(404).json({ error: "Template not found" });
+
+    // Only allow editing if DRAFT or REJECTED
+    if (template.status !== 'DRAFT' && template.status !== 'REJECTED') {
+      return res.status(400).json({ error: "Only draft or rejected templates can be modified locally." });
+    }
+
+    const stmt = db.prepare(`
+      UPDATE whatsapp_templates SET
+        template_name = ?,
+        category = ?,
+        language = ?,
+        header_type = ?,
+        header_content = ?,
+        body_content = ?,
+        footer_content = ?,
+        buttons_json = ?,
+        status = 'DRAFT',
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND org_id = ?
+    `);
+
+    stmt.run(
+      template_name || template.template_name,
+      category ? category.toUpperCase() : template.category,
+      language || template.language,
+      header_type || template.header_type,
+      header_content !== undefined ? header_content : template.header_content,
+      body_content || template.body_content,
+      footer_content !== undefined ? footer_content : template.footer_content,
+      buttons_json ? JSON.stringify(buttons_json) : template.buttons_json,
+      req.params.id,
+      req.user.org_id
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Update template error:", error);
+    res.status(500).json({ error: "Failed to update template" });
+  }
+});
+
+app.delete('/api/templates/:id', authenticateToken, async (req, res) => {
+  try {
+    const template = db.prepare('SELECT * FROM whatsapp_templates WHERE id = ? AND org_id = ?').get(req.params.id, req.user.org_id);
+    if (!template) return res.status(404).json({ error: "Template not found" });
+
+    const config = await getWhatsAppConfig(req.user.org_id);
+
+    // Call Meta to delete if it was submitted/active
+    if (config && config.accessToken && config.wabaId && template.meta_template_id) {
+      try {
+        await axios({
+          method: 'DELETE',
+          url: `https://graph.facebook.com/v22.0/${config.wabaId}/message_templates`,
+          headers: { 'Authorization': `Bearer ${config.accessToken}` },
+          params: { name: template.template_name }
+        });
+      } catch (metaError) {
+        console.warn("Failed to delete template from Meta, will delete locally:", metaError.response?.data || metaError.message);
+      }
+    }
+
+    db.prepare('DELETE FROM whatsapp_templates WHERE id = ? AND org_id = ?').run(req.params.id, req.user.org_id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete template error:", error);
+    res.status(500).json({ error: "Failed to delete template" });
+  }
+});
+
+app.post('/api/templates/submit', authenticateToken, async (req, res) => {
+  const { id } = req.body;
+
+  try {
+    const template = db.prepare('SELECT * FROM whatsapp_templates WHERE id = ? AND org_id = ?').get(id, req.user.org_id);
+    if (!template) return res.status(404).json({ error: "Template not found" });
+
+    const config = await getWhatsAppConfig(req.user.org_id);
+
+    // Format components for Meta API
+    const components = [];
+
+    // Header
+    if (template.header_type && template.header_type !== 'NONE') {
+      if (template.header_type === 'TEXT') {
+        components.push({
+          type: 'HEADER',
+          format: 'TEXT',
+          text: template.header_content
+        });
+      } else {
+        // IMAGE, VIDEO, DOCUMENT
+        components.push({
+          type: 'HEADER',
+          format: template.header_type,
+          example: {
+            header_handle: [template.header_content || "https://images.unsplash.com/photo-1531403009284-440f080d1e12"]
+          }
+        });
+      }
+    }
+
+    // Body
+    components.push({
+      type: 'BODY',
+      text: template.body_content
+    });
+
+    // Footer
+    if (template.footer_content) {
+      components.push({
+        type: 'FOOTER',
+        text: template.footer_content
+      });
+    }
+
+    // Buttons
+    if (template.buttons_json) {
+      const buttons = JSON.parse(template.buttons_json);
+      if (buttons && buttons.length > 0) {
+        const metaButtons = buttons.map(b => {
+          if (b.type === 'QUICK_REPLY') {
+            return {
+              type: 'QUICK_REPLY',
+              text: b.text
+            };
+          } else if (b.type === 'PHONE_NUMBER') {
+            return {
+              type: 'PHONE_NUMBER',
+              text: b.text,
+              phone_number: b.phone_number
+            };
+          } else if (b.type === 'URL') {
+            return {
+              type: 'URL',
+              text: b.text,
+              url: b.url
+            };
+          }
+        });
+        components.push({
+          type: 'BUTTONS',
+          buttons: metaButtons
+        });
+      }
+    }
+
+    let metaTemplateId = null;
+    let newStatus = 'PENDING';
+
+    if (config && config.accessToken && config.wabaId) {
+      try {
+        const response = await axios({
+          method: 'POST',
+          url: `https://graph.facebook.com/v22.0/${config.wabaId}/message_templates`,
+          headers: {
+            'Authorization': `Bearer ${config.accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          data: {
+            name: template.template_name,
+            category: template.category,
+            language: template.language,
+            components
+          }
+        });
+        metaTemplateId = response.data.id;
+        newStatus = 'PENDING';
+      } catch (metaError) {
+        const errorDetails = metaError.response?.data || metaError.message;
+        console.error("Meta Template Submit Failed:", errorDetails);
+        fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Meta Template Submit Failed: ${JSON.stringify(errorDetails)}\n`);
+        return res.status(400).json({ error: "Meta API Rejected Template", details: errorDetails });
+      }
+    } else {
+      // Simulation mode
+      console.log("[SIMULATION] Submitting template to Meta WABA:", template.template_name);
+      metaTemplateId = "sim_" + Math.random().toString(36).substr(2, 9);
+      newStatus = 'APPROVED'; // Approve immediately in simulation mode for local sandbox testing
+    }
+
+    db.prepare('UPDATE whatsapp_templates SET status = ?, meta_template_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND org_id = ?')
+      .run(newStatus, metaTemplateId, id, req.user.org_id);
+
+    res.json({ success: true, status: newStatus, metaTemplateId });
+
+  } catch (error) {
+    console.error("Submit template error:", error);
+    res.status(500).json({ error: "Failed to submit template" });
+  }
+});
+
+app.post('/api/templates/sync', authenticateToken, async (req, res) => {
+  try {
+    const config = await getWhatsAppConfig(req.user.org_id);
+    if (!config || !config.accessToken || !config.wabaId) {
+      // In simulation mode, randomly resolve PENDING templates to APPROVED/REJECTED for demo purposes
+      db.prepare(`
+        UPDATE whatsapp_templates 
+        SET status = 'APPROVED', updated_at = CURRENT_TIMESTAMP 
+        WHERE status = 'PENDING' AND org_id = ?
+      `).run(req.user.org_id);
+      return res.json({ success: true, message: "Sync simulated (all pending approved)" });
+    }
+
+    const response = await axios({
+      method: 'GET',
+      url: `https://graph.facebook.com/v22.0/${config.wabaId}/message_templates`,
+      headers: { 'Authorization': `Bearer ${config.accessToken}` },
+      params: { limit: 100 }
+    });
+
+    const metaTemplates = response.data.data || [];
+    const updateStmt = db.prepare(`
+      UPDATE whatsapp_templates 
+      SET status = ?, meta_template_id = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE template_name = ? AND org_id = ?
+    `);
+
+    db.transaction(() => {
+      for (const mt of metaTemplates) {
+        updateStmt.run(mt.status, mt.id, mt.name, req.user.org_id);
+      }
+    })();
+
+    res.json({ success: true, count: metaTemplates.length });
+  } catch (error) {
+    console.error("Sync templates error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to sync with Meta", details: error.response?.data || error.message });
+  }
+});
+
+app.post('/api/templates/generate-ai', authenticateToken, async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: "Prompt is required" });
+
+  const systemInstruction = `You are a professional WhatsApp Marketing AI content strategist. 
+  Generate a WhatsApp template in a valid JSON format based on the user's campaign goal.
+  
+  Strict JSON keys in output:
+  - "template_name": lowercase letters, underscores only, no spaces (e.g., "diwali_sale_2026")
+  - "category": Must be one of: "MARKETING", "UTILITY", "AUTHENTICATION"
+  - "header_type": "NONE", "TEXT", "IMAGE", "VIDEO", "DOCUMENT"
+  - "header_content": (e.g. text for header like "Diwali Deals!" or null)
+  - "body_content": rich text copy. Variables MUST be in format {{1}}, {{2}} (e.g., "Hi {{1}}, get {{2}}% off our festive collection!")
+  - "footer_content": optional short text under 60 chars (e.g., "Reply STOP to opt out")
+  - "buttons_json": Array of button objects. Supported button types:
+    - Quick replies: { "type": "QUICK_REPLY", "text": "Shop Now" } (Max 3 quick replies)
+    - Call: { "type": "PHONE_NUMBER", "text": "Call Us", "phone_number": "+15551234567" }
+    - URL: { "type": "URL", "text": "Visit Site", "url": "https://example.com/{{1}}" }
+    
+  Return ONLY the raw JSON object. Do not include markdown code formatting like \`\`\`json.`;
+
+  try {
+    const aiResponse = await askAI(prompt, systemInstruction);
+    let cleanedResponse = aiResponse;
+    const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanedResponse = jsonMatch[0];
+    }
+    const templateData = JSON.parse(cleanedResponse);
+    res.json(templateData);
+  } catch (error) {
+    console.error("Gemini AI template generation error:", error);
+    res.status(500).json({ error: "AI Copilot failed to generate template", details: error.message });
+  }
 });
 
 app.get('/api/messages/recent', authenticateToken, (req, res) => {

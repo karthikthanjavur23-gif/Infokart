@@ -109,6 +109,28 @@ const initDb = () => {
     )
   `);
 
+  // 7. WhatsApp Rich Templates
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      waba_id TEXT,
+      meta_template_id TEXT,
+      template_name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      language TEXT NOT NULL,
+      header_type TEXT DEFAULT 'NONE',
+      header_content TEXT,
+      body_content TEXT NOT NULL,
+      footer_content TEXT,
+      buttons_json TEXT,
+      status TEXT DEFAULT 'DRAFT',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(org_id, template_name)
+    )
+  `);
+
   console.log("Database initialized successfully!");
 };
 
@@ -148,6 +170,53 @@ const seedDb = () => {
     insertTemplate.run('Summer Sale Blast', 'Hey {{name}}! ☀️ Our Summer Splash Sale is LIVE! Get up to 50% off on all premium items.', 'Marketing');
     insertTemplate.run('Welcome Message', 'Hi {{name}}, welcome to InfoKart! We are excited to have you on board. 👋', 'Utility');
     insertTemplate.run('Feedback Request', 'Hello! We hope you enjoyed our service. Would you mind sharing your feedback? ⭐', 'Marketing');
+
+    // Seed Rich WhatsApp Templates
+    const insertWppTemplate = db.prepare(`
+      INSERT INTO whatsapp_templates (org_id, template_name, category, language, header_type, header_content, body_content, footer_content, buttons_json, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    insertWppTemplate.run(
+      1,
+      'summer_sale_2026',
+      'MARKETING',
+      'en_US',
+      'NONE',
+      null,
+      'Hey {{1}}! ☀️ Our Summer Splash Sale is LIVE! Get up to 50% off on all premium items.',
+      'Reply STOP to unsubscribe',
+      JSON.stringify([
+        { type: 'QUICK_REPLY', text: 'Shop Now' },
+        { type: 'QUICK_REPLY', text: 'More Deals' }
+      ]),
+      'APPROVED'
+    );
+    insertWppTemplate.run(
+      1,
+      'order_shipping_update',
+      'UTILITY',
+      'en_US',
+      'TEXT',
+      'Order Shipped!',
+      'Hi {{1}}, your order {{2}} has been shipped. Track it here: {{3}}',
+      'Thanks for shopping with us!',
+      JSON.stringify([
+        { type: 'URL', text: 'Track Order', url: 'https://example.com/track/{{1}}' }
+      ]),
+      'PENDING'
+    );
+    insertWppTemplate.run(
+      1,
+      'auth_code_2fa',
+      'AUTHENTICATION',
+      'en_US',
+      'NONE',
+      null,
+      'Your login verification code is {{1}}. Do not share this code with anyone.',
+      'Code expires in 5 minutes.',
+      null,
+      'APPROVED'
+    );
   }
 };
 
