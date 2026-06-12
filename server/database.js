@@ -1,7 +1,15 @@
+const fs = require('fs');
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = path.resolve(__dirname, 'infokart.db');
+const dbPath = process.env.PERSISTENT_DB_PATH || path.resolve(__dirname, 'infokart.db');
+
+// Ensure parent directory exists
+const parentDir = path.dirname(dbPath);
+if (!fs.existsSync(parentDir)) {
+  fs.mkdirSync(parentDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
 // Initialize database tables
