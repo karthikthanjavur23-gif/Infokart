@@ -477,7 +477,7 @@ app.get('/api/campaigns/:id', authenticateToken, (req, res) => {
   res.json(campaign);
 });
 
-app.get('/api/campaigns/:id/contacts', (req, res) => {
+app.get('/api/campaigns/:id/contacts', authenticateToken, (req, res) => {
   const contacts = db.prepare(`
     SELECT c.*, cc.status as campaign_status 
     FROM contacts c
@@ -487,13 +487,13 @@ app.get('/api/campaigns/:id/contacts', (req, res) => {
   res.json(contacts);
 });
 
-app.post('/api/campaigns', (req, res) => {
+app.post('/api/campaigns', authenticateToken, (req, res) => {
   const { name, channel, target, template, contactIds, settings, scheduledAt } = req.body;
   
   // If we have selected contacts, the target count is the length of that selection
   const finalTarget = (contactIds && Array.isArray(contactIds)) ? contactIds.length : (target || 0);
   
-  const stmt = db.prepare('INSERT INTO campaigns (name, channel, status, target, template, settings, scheduled_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const stmt = db.prepare('INSERT INTO campaigns (name, channel, status, target, template, settings, scheduled_at, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   const info = stmt.run(
     name, 
     channel, 
@@ -501,7 +501,8 @@ app.post('/api/campaigns', (req, res) => {
     finalTarget, 
     template || '', 
     settings ? JSON.stringify(settings) : null,
-    scheduledAt || null
+    scheduledAt || null,
+    req.user.org_id
   );
   
   const campaignId = info.lastInsertRowid;
@@ -520,15 +521,15 @@ app.post('/api/campaigns', (req, res) => {
   res.json({ id: campaignId, success: true });
 });
 
-app.post('/api/campaigns/:id/send', async (req, res) => {
+app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
   const campaignId = req.params.id;
-  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ?').get(campaignId);
+  const campaign = db.prepare('SELECT * FROM campaigns WHERE id = ? AND org_id = ?').get(campaignId, req.user.org_id);
 
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
   if (campaign.status === 'Completed') return res.status(400).json({ error: 'Campaign already completed' });
 
   // Update status to Active
-  db.prepare("UPDATE campaigns SET status = 'Active' WHERE id = ?").run(campaignId);
+  db.prepare("UPDATE campaigns SET status = 'Active' WHERE id = ? AND org_id = ?").run(campaignId, req.user.org_id);
 
   // Fetch pending contacts for this campaign
   const contacts = db.prepare(`
@@ -538,7 +539,7 @@ app.post('/api/campaigns/:id/send', async (req, res) => {
     WHERE cc.campaign_id = ? AND cc.status = 'Pending'
   `).all(campaignId);
 
-  const config = await getWhatsAppConfig();
+  const config = await getWhatsAppConfig(req.user.org_id);
 
   if (!config || !config.phoneNumberId || !config.accessToken) {
     return res.status(400).json({ error: 'WhatsApp is not connected. Connect via Marketing Workspace first.' });
