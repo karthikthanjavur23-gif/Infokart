@@ -1282,6 +1282,324 @@ app.get('/api/messages/recent', authenticateToken, (req, res) => {
   res.json(messages);
 });
 
+// --- SHARED TEAM INBOX ENDPOINTS ---
+
+// Helper to find or create conversation
+async function getOrCreateConversation(orgId, contactId, channel) {
+  let conv = db.prepare('SELECT * FROM conversations WHERE org_id = ? AND customer_id = ? AND channel = ?').get(orgId, contactId, channel);
+  if (!conv) {
+    const result = db.prepare('INSERT INTO conversations (org_id, customer_id, channel, status) VALUES (?, ?, ?, ?)')
+      .run(orgId, contactId, channel, 'open');
+    conv = { id: result.lastInsertRowid, org_id: orgId, customer_id: contactId, channel: channel, status: 'open', assigned_to: null, priority: 'medium', sentiment: 'neutral' };
+  }
+  return conv;
+}
+
+app.get('/api/inbox/conversations', authenticateToken, (req, res) => {
+  const orgId = req.user.org_id;
+  const { status, channel, assigned_to, search } = req.query;
+
+  let query = `
+    SELECT c.*, 
+           con.name as customer_name, con.phone_number as customer_phone, con.email as customer_email, con.tags as customer_tags, con.notes as customer_notes,
+           u.name as assignee_name,
+           (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_content,
+           (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time,
+           (SELECT sender_type FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_sender,
+           (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND direction = 'inbound' AND status != 'read') as unread_count
+    FROM conversations c
+    JOIN contacts con ON c.customer_id = con.id
+    LEFT JOIN users u ON c.assigned_to = u.id
+    WHERE c.org_id = ?
+  `;
+  const params = [orgId];
+
+  if (status && status !== 'ALL') {
+    query += ' AND c.status = ?';
+    params.push(status.toLowerCase());
+  } else {
+    query += " AND c.status != 'spam' AND c.status != 'archived'";
+  }
+
+  if (channel && channel !== 'ALL') {
+    query += ' AND c.channel = ?';
+    params.push(channel);
+  }
+
+  if (assigned_to) {
+    if (assigned_to === 'unassigned') {
+      query += ' AND c.assigned_to IS NULL';
+    } else if (assigned_to === 'my') {
+      query += ' AND c.assigned_to = ?';
+      params.push(req.user.id);
+    } else {
+      query += ' AND c.assigned_to = ?';
+      params.push(parseInt(assigned_to));
+    }
+  }
+
+  if (search) {
+    query += ' AND (con.name LIKE ? OR con.phone_number LIKE ?)';
+    params.push(`%${search}%`, `%${search}%`);
+  }
+
+  query += ' ORDER BY last_message_time DESC';
+
+  try {
+    const rows = db.prepare(query).all(...params);
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/inbox/messages', authenticateToken, (req, res) => {
+  const { conversation_id } = req.query;
+  if (!conversation_id) return res.status(400).json({ error: "conversation_id is required" });
+
+  try {
+    db.prepare("UPDATE messages SET status = 'read' WHERE conversation_id = ? AND direction = 'inbound'").run(conversation_id);
+    const messages = db.prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC').all(conversation_id);
+    res.json(messages);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/send', authenticateToken, async (req, res) => {
+  const { conversation_id, content, media_url, template_name } = req.body;
+  const orgId = req.user.org_id;
+
+  if (!conversation_id) return res.status(400).json({ error: "conversation_id is required" });
+
+  try {
+    const conv = db.prepare('SELECT * FROM conversations WHERE id = ? AND org_id = ?').get(conversation_id, orgId);
+    if (!conv) return res.status(404).json({ error: "Conversation not found" });
+
+    const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(conv.customer_id);
+    if (!contact) return res.status(404).json({ error: "Customer not found" });
+
+    let finalContent = content;
+    if (template_name) {
+      const tpl = db.prepare('SELECT * FROM whatsapp_templates WHERE template_name = ? AND org_id = ?').get(template_name, orgId);
+      if (tpl) finalContent = tpl.body_content.replace(/\{\{1\}\}/g, contact.name || 'Friend');
+    }
+
+    const result = db.prepare(`
+      INSERT INTO messages (org_id, phone_number, sender, direction, content, status, conversation_id, sender_type, media_url)
+      VALUES (?, ?, 'agent', 'outbound', ?, 'sent', ?, 'agent', ?)
+    `).run(orgId, contact.phone_number, finalContent || '', conversation_id, media_url || null);
+    
+    const messageId = result.lastInsertRowid;
+    db.prepare('UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(conversation_id);
+
+    if (conv.channel === 'WhatsApp') {
+      const config = await getWhatsAppConfig(orgId);
+      if (config && config.phoneNumberId && config.accessToken) {
+        try {
+          let postData;
+          if (template_name) {
+            const templateNameSlug = template_name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+            postData = {
+              messaging_product: 'whatsapp',
+              to: contact.phone_number,
+              type: 'template',
+              template: {
+                name: templateNameSlug,
+                language: { code: 'en' },
+                components: [{ type: 'body', parameters: [{ type: 'text', text: contact.name || 'Friend' }] }]
+              }
+            };
+          } else if (media_url) {
+            const isImg = /\.(jpeg|jpg|gif|png)$/i.test(media_url);
+            postData = {
+              messaging_product: 'whatsapp',
+              to: contact.phone_number,
+              type: isImg ? 'image' : 'document',
+              [isImg ? 'image' : 'document']: { link: media_url }
+            };
+          } else {
+            postData = {
+              messaging_product: 'whatsapp',
+              to: contact.phone_number,
+              type: 'text',
+              text: { body: finalContent }
+            };
+          }
+
+          await axios({
+            method: 'POST',
+            url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
+            headers: { 'Authorization': `Bearer ${config.accessToken}`, 'Content-Type': 'application/json' },
+            data: postData,
+          });
+          db.prepare("UPDATE messages SET status = 'delivered' WHERE id = ?").run(messageId);
+        } catch (metaError) {
+          console.error("Meta API Inbox Reply failed:", metaError.response?.data || metaError.message);
+        }
+      } else {
+        console.log(`[SIMULATED] Outbound WhatsApp to ${contact.phone_number}: ${finalContent}`);
+      }
+    }
+
+    // Background AI Tagging and Sentiment
+    (async () => {
+      try {
+        if (aiModel && finalContent) {
+          const prompt = `Analyze customer message: "${finalContent}". Detect sentiment (positive, neutral, negative) and assign up to 3 marketing/support tags. 
+          Return a JSON object with keys: "sentiment" (value: positive, neutral, negative) and "tags" (array of strings). Return ONLY valid JSON.`;
+          const response = await askAI(prompt, "You are a customer intelligence AI. Return ONLY a JSON object.");
+          const jsonMatch = response.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            if (parsed.sentiment) db.prepare('UPDATE conversations SET sentiment = ? WHERE id = ?').run(parsed.sentiment, conversation_id);
+            if (Array.isArray(parsed.tags) && parsed.tags.length > 0) {
+              const current = contact.tags ? contact.tags.split(',') : [];
+              const updated = Array.from(new Set([...current, ...parsed.tags])).join(',');
+              db.prepare('UPDATE contacts SET tags = ? WHERE id = ?').run(updated, contact.id);
+            }
+          }
+        }
+      } catch (e) { console.error(e); }
+    })();
+
+    res.json({ success: true, messageId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/assign', authenticateToken, (req, res) => {
+  const { conversation_id, assigned_to } = req.body;
+  try {
+    db.prepare('UPDATE conversations SET assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND org_id = ?')
+      .run(assigned_to || null, conversation_id, req.user.org_id);
+    
+    let logText = "Conversation unassigned.";
+    if (assigned_to) {
+      const user = db.prepare('SELECT name FROM users WHERE id = ?').get(assigned_to);
+      if (user) logText = `Conversation assigned to ${user.name}.`;
+    }
+    db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', ?, \'system\', ?)')
+      .run(req.user.org_id, 'system', logText, conversation_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/note', authenticateToken, (req, res) => {
+  const { conversation_id, note } = req.body;
+  try {
+    db.prepare('INSERT INTO notes (conversation_id, agent_id, note) VALUES (?, ?, ?)')
+      .run(conversation_id, req.user.id, note);
+    
+    const logText = `@${req.user.name}: ${note}`;
+    db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', ?, \'internal_note\', ?)')
+      .run(req.user.org_id, 'internal_note', logText, conversation_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/close', authenticateToken, (req, res) => {
+  const { conversation_id } = req.body;
+  try {
+    db.prepare("UPDATE conversations SET status = 'closed', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND org_id = ?").run(conversation_id, req.user.org_id);
+    db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', \'Conversation closed by agent.\', \'system\', ?)')
+      .run(req.user.org_id, 'system', conversation_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/reopen', authenticateToken, (req, res) => {
+  const { conversation_id } = req.body;
+  try {
+    db.prepare("UPDATE conversations SET status = 'open', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND org_id = ?").run(conversation_id, req.user.org_id);
+    db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', \'Conversation reopened by agent.\', \'system\', ?)')
+      .run(req.user.org_id, 'system', conversation_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/active-status', authenticateToken, (req, res) => {
+  const { conversation_id, typing_status } = req.body;
+  try {
+    db.prepare(`
+      INSERT INTO active_agents (org_id, conversation_id, user_id, username, typing_status, last_active)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(org_id, conversation_id, user_id) DO UPDATE SET
+        typing_status = excluded.typing_status,
+        last_active = CURRENT_TIMESTAMP
+    `).run(req.user.org_id, conversation_id, req.user.id, req.user.name, typing_status ? 1 : 0);
+    
+    db.prepare("DELETE FROM active_agents WHERE last_active < datetime('now', '-10 seconds')").run();
+    
+    const others = db.prepare('SELECT user_id, username, typing_status FROM active_agents WHERE org_id = ? AND conversation_id = ? AND user_id != ?')
+      .all(req.user.org_id, conversation_id, req.user.id);
+    res.json({ success: true, active_agents: others });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/ai-auto-suggest', authenticateToken, async (req, res) => {
+  const { conversation_id } = req.body;
+  try {
+    const conv = db.prepare('SELECT * FROM conversations WHERE id = ? AND org_id = ?').get(conversation_id, req.user.org_id);
+    if (!conv) return res.status(404).json({ error: "Conversation not found" });
+
+    const history = db.prepare('SELECT sender, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 5').all(conversation_id);
+    if (history.length === 0) return res.json({ response: "No customer history yet." });
+
+    const historyText = history.reverse().map(h => `${h.sender === 'user' ? 'Customer' : 'Agent'}: ${h.content}`).join('\n');
+    const articles = db.prepare('SELECT title, content FROM inbox_knowledge_base WHERE org_id = ?').all(req.user.org_id);
+    
+    let kbContext = "";
+    if (articles.length > 0) {
+      kbContext = "\nRelevant Knowledge Base Training:\n" + articles.map(a => `[${a.title}]: ${a.content}`).join('\n');
+    }
+
+    const systemInstruction = `You are a helpful customer support agent for InfoKart. 
+    Analyze the conversation history and the training knowledge base provided. 
+    Generate a professional, friendly, and concise response to the customer's last message.
+    If the answer is in the knowledge base, align the reply with it exactly.
+    Only output the draft message text itself without extra chat logs.`;
+
+    const prompt = `Conversation history:\n${historyText}\n${kbContext}\n\nSuggested Response:`;
+    const response = await askAI(prompt, systemInstruction);
+    res.json({ response });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/inbox/kb', authenticateToken, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT * FROM inbox_knowledge_base WHERE org_id = ? ORDER BY created_at DESC').all(req.user.org_id);
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/inbox/kb', authenticateToken, (req, res) => {
+  const { source_type, title, content } = req.body;
+  try {
+    db.prepare('INSERT INTO inbox_knowledge_base (org_id, source_type, title, content) VALUES (?, ?, ?, ?)')
+      .run(req.user.org_id, source_type, title || source_type.toUpperCase(), content);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 8. Team Management
 app.get('/api/users', authenticateToken, (req, res) => {
   const users = db.prepare('SELECT id, name, email, role, created_at FROM users WHERE org_id = ?').all(req.user.org_id);
@@ -1343,13 +1661,22 @@ app.post('/webhook', async (req, res) => {
       
       console.log(`[Webhook] Incoming from ${phoneNumber}: ${msgBody}`);
 
-      // 1. Log to Database
-      db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
-        .run(phoneNumber, 'user', 'inbound', msgBody);
-
-      // Ensure contact exists
-      db.prepare('INSERT OR IGNORE INTO contacts (phone_number, name) VALUES (?, ?)')
+      // Ensure contact exists and retrieve details
+      db.prepare('INSERT OR IGNORE INTO contacts (phone_number, name, org_id) VALUES (?, ?, 1)')
         .run(phoneNumber, 'Unknown User');
+      const contact = db.prepare('SELECT id FROM contacts WHERE phone_number = ? AND org_id = 1').get(phoneNumber);
+      
+      // Ensure conversation exists for WhatsApp channel
+      let conv = db.prepare("SELECT id FROM conversations WHERE org_id = 1 AND customer_id = ? AND channel = 'WhatsApp'").get(contact.id);
+      if (!conv) {
+        const insResult = db.prepare("INSERT INTO conversations (org_id, customer_id, channel, status) VALUES (1, ?, 'WhatsApp', 'open')")
+          .run(contact.id);
+        conv = { id: insResult.lastInsertRowid };
+      }
+
+      // 1. Log to Database with conversation link
+      db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, ?, ?, ?, ?, \'user\', 1)')
+        .run(phoneNumber, 'user', 'inbound', msgBody, conv.id);
 
       // 2. Chatbot Auto-Reply Logic
       const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
@@ -1358,8 +1685,8 @@ app.post('/webhook', async (req, res) => {
         const config = await getWhatsAppConfig();
         const replyMsg = `Hi! Thanks for your message ("${msgBody}"). I am the automated assistant. We will be right with you.`;
         
-        db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
-          .run(phoneNumber, 'bot', 'outbound', replyMsg);
+        db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, \'bot\', \'outbound\', ?, ?, \'bot\', 1)')
+          .run(phoneNumber, replyMsg, conv.id);
 
         if (config && config.phoneNumberId && config.accessToken) {
            await axios({
@@ -1390,6 +1717,55 @@ app.get('/api/debug-users', (req, res) => {
     res.json({ success: true, users: result });
   } catch (e) {
     res.json({ success: false, error: e.message });
+  }
+});
+
+// --- PUBLIC LIVE CHAT WIDGET ENDPOINTS ---
+
+app.get('/api/public/messages/:visitor_id', (req, res) => {
+  try {
+    const messages = db.prepare("SELECT * FROM messages WHERE phone_number = ? AND org_id = 1 ORDER BY created_at ASC").all(req.params.visitor_id);
+    res.json(messages);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/public/send', async (req, res) => {
+  const { visitor_id, content } = req.body;
+  if (!visitor_id || !content) return res.status(400).json({ error: "Missing visitor_id or content" });
+
+  try {
+    // 1. Ensure contact exists
+    db.prepare("INSERT OR IGNORE INTO contacts (phone_number, name, org_id) VALUES (?, ?, 1)")
+      .run(visitor_id, 'Website Visitor');
+    const contact = db.prepare("SELECT id FROM contacts WHERE phone_number = ? AND org_id = 1").get(visitor_id);
+
+    // 2. Ensure conversation exists
+    let conv = db.prepare("SELECT id FROM conversations WHERE org_id = 1 AND customer_id = ? AND channel = 'Website'").get(contact.id);
+    if (!conv) {
+      const result = db.prepare("INSERT INTO conversations (org_id, customer_id, channel, status) VALUES (1, ?, 'Website', 'open')")
+        .run(contact.id);
+      conv = { id: result.lastInsertRowid };
+    }
+
+    // 3. Log inbound message in messages
+    db.prepare("INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, 'user', 'inbound', ?, ?, 'user', 1)")
+      .run(visitor_id, content, conv.id);
+
+    db.prepare("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(conv.id);
+
+    // Chatbot auto reply trigger
+    const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
+    if (autoReplyEnabled === 'true') {
+      const replyMsg = `Hi there! An agent has been alerted and will takeover shortly. In the meantime, feel free to share your email.`;
+      db.prepare("INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, 'bot', 'outbound', ?, ?, 'bot', 1)")
+        .run(visitor_id, replyMsg, conv.id);
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

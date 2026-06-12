@@ -14,10 +14,44 @@ const db = new Database(dbPath);
 
 // Initialize database tables
 const initDb = () => {
+  // 0. Base tables: Organizations, Users, Audit Logs (essential for multi-tenancy)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS organizations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'member', -- 'admin', 'member'
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      user_id INTEGER,
+      action TEXT NOT NULL,
+      details TEXT,
+      ip_address TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 1. Contacts (CRM)
   db.exec(`
     CREATE TABLE IF NOT EXISTS contacts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER DEFAULT 1,
       name TEXT,
       email TEXT,
       phone_number TEXT UNIQUE NOT NULL,
@@ -31,6 +65,7 @@ const initDb = () => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER DEFAULT 1,
       phone_number TEXT NOT NULL,
       sender TEXT NOT NULL, -- 'user', 'bot', 'agent'
       direction TEXT NOT NULL, -- 'inbound', 'outbound'
@@ -44,6 +79,7 @@ const initDb = () => {
   db.exec(`
     CREATE TABLE IF NOT EXISTS campaigns (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER DEFAULT 1,
       name TEXT NOT NULL,
       channel TEXT NOT NULL, -- 'WhatsApp', 'Email', etc.
       status TEXT DEFAULT 'Draft', -- 'Draft', 'Active', 'Completed'
@@ -76,6 +112,7 @@ const initDb = () => {
       platform TEXT NOT NULL, -- 'whatsapp' or 'instagram'
       key TEXT NOT NULL,
       value TEXT,
+      org_id INTEGER DEFAULT 1,
       PRIMARY KEY (platform, key)
     )
   `);
@@ -131,6 +168,79 @@ const initDb = () => {
     )
   `);
 
+  // 8. Inbox Conversations
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      customer_id INTEGER NOT NULL,
+      channel TEXT NOT NULL, -- 'WhatsApp', 'Instagram', 'Website'
+      status TEXT DEFAULT 'open', -- 'open', 'closed', 'archived', 'spam'
+      assigned_to INTEGER, -- references users.id
+      priority TEXT DEFAULT 'medium', -- 'low', 'medium', 'high'
+      sentiment TEXT DEFAULT 'neutral', -- 'positive', 'neutral', 'negative'
+      sla_warning_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(customer_id) REFERENCES contacts(id),
+      FOREIGN KEY(assigned_to) REFERENCES users(id)
+    )
+  `);
+
+  // 9. Conversations Internal Notes
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      agent_id INTEGER NOT NULL,
+      note TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(conversation_id) REFERENCES conversations(id),
+      FOREIGN KEY(agent_id) REFERENCES users(id)
+    )
+  `);
+
+  // 10. AI Knowledge Base Data
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS inbox_knowledge_base (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      source_type TEXT NOT NULL, -- 'url', 'faq', 'text'
+      title TEXT,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 11. Active Agents Presence (Collision Detection)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS active_agents (
+      org_id INTEGER NOT NULL,
+      conversation_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      username TEXT NOT NULL,
+      typing_status INTEGER DEFAULT 0, -- 0 = idle, 1 = typing
+      last_active DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (org_id, conversation_id, user_id)
+    )
+  `);
+
+  // Upgrades: Add new fields to existing messages table dynamically
+  try {
+    db.exec("ALTER TABLE messages ADD COLUMN conversation_id INTEGER;");
+    console.log("Added conversation_id column to messages table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE messages ADD COLUMN sender_type TEXT DEFAULT 'user';");
+    console.log("Added sender_type column to messages table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE messages ADD COLUMN media_url TEXT;");
+    console.log("Added media_url column to messages table.");
+  } catch (e) { /* Already exists */ }
+
   console.log("Database initialized successfully!");
 };
 
@@ -140,30 +250,55 @@ const seedDb = () => {
   if (count.count === 0) {
     console.log("Seeding initial data...");
     
+    // Ensure Org exists
+    db.prepare('INSERT OR IGNORE INTO organizations (id, name) VALUES (?, ?)').run(1, 'Infokart Demo');
+
     // Seed Bot Configs
-    const insertConfig = db.prepare('INSERT INTO bot_configs (platform, key, value) VALUES (?, ?, ?)');
-    insertConfig.run('whatsapp', 'autoReplyEnabled', 'true');
-    insertConfig.run('whatsapp', 'greetingEnabled', 'true');
-    insertConfig.run('instagram', 'autoReplyEnabled', 'true');
-    insertConfig.run('instagram', 'storyMentionsEnabled', 'true');
+    const insertConfig = db.prepare('INSERT INTO bot_configs (platform, key, value, org_id) VALUES (?, ?, ?, ?)');
+    insertConfig.run('whatsapp', 'autoReplyEnabled', 'true', 1);
+    insertConfig.run('whatsapp', 'greetingEnabled', 'true', 1);
+    insertConfig.run('instagram', 'autoReplyEnabled', 'true', 1);
+    insertConfig.run('instagram', 'storyMentionsEnabled', 'true', 1);
 
     // Seed Campaigns
-    const insertCampaign = db.prepare('INSERT INTO campaigns (name, channel, status, sent, opened, clicks, target) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    insertCampaign.run('Summer Sale 2026', 'WhatsApp', 'Active', 1200, 950, 420, 5000);
-    insertCampaign.run('New Feature Alert', 'WhatsApp', 'Draft', 0, 0, 0, 2000);
-    insertCampaign.run('Re-engagement Q1', 'WhatsApp', 'Completed', 5000, 4100, 1205, 5000);
+    const insertCampaign = db.prepare('INSERT INTO campaigns (name, channel, status, sent, opened, clicks, target, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    insertCampaign.run('Summer Sale 2026', 'WhatsApp', 'Active', 1200, 950, 420, 5000, 1);
+    insertCampaign.run('New Feature Alert', 'WhatsApp', 'Draft', 0, 0, 0, 2000, 1);
+    insertCampaign.run('Re-engagement Q1', 'WhatsApp', 'Completed', 5000, 4100, 1205, 5000, 1);
     
     // Seed Contacts
-    const insertContact = db.prepare('INSERT INTO contacts (name, phone_number, tags) VALUES (?, ?, ?)');
-    insertContact.run('Alice Johnson', '15551234567', 'Lead,VIP');
-    insertContact.run('Bob Smith', '15559876543', 'Customer');
+    const insertContact = db.prepare('INSERT INTO contacts (id, name, phone_number, tags, email, notes, org_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    insertContact.run(1, 'Alice Johnson', '15551234567', 'Lead,VIP', 'alice@example.com', 'Interested in premium plan.', 1);
+    insertContact.run(2, 'Bob Smith', '15559876543', 'Customer,Interested', 'bob@example.com', 'Needs pricing clarification.', 1);
+    insertContact.run(3, 'Charlie Brown', '15555550100', 'Lead,Cold Lead', 'charlie@example.com', 'Story reply lead.', 1);
+    insertContact.run(4, 'David Miller', 'website_visitor_123', 'Website visitor', 'david@example.com', 'Visited website from ad.', 1);
     
-    // Seed Messages
-    const insertMessage = db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)');
-    insertMessage.run('15551234567', 'user', 'inbound', 'Hi, I have a question about the Summer Sale.');
-    insertMessage.run('15551234567', 'bot', 'outbound', 'Hello! Thanks for reaching out. How can I help you with our Summer Sale today?');
-    insertMessage.run('15559876543', 'user', 'inbound', 'Pricing?');
-    insertMessage.run('15559876543', 'agent', 'outbound', 'Hi Bob, our pricing starts at $10/mo.');
+    // Seed Conversations
+    const insertConv = db.prepare('INSERT INTO conversations (id, org_id, customer_id, channel, status, assigned_to, priority, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    insertConv.run(1, 1, 1, 'WhatsApp', 'open', null, 'high', 'positive'); // WhatsApp Alice unassigned
+    insertConv.run(2, 1, 2, 'WhatsApp', 'open', 1, 'medium', 'neutral'); // WhatsApp Bob assigned to agent 1
+    insertConv.run(3, 1, 3, 'Instagram', 'open', null, 'low', 'neutral'); // Instagram Charlie unassigned
+    insertConv.run(4, 1, 4, 'Website', 'open', null, 'high', 'positive'); // Website Live Chat David
+    
+    // Seed Messages (linked to conversations)
+    const insertMessage = db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, status, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    
+    // Alice thread (WhatsApp)
+    insertMessage.run('15551234567', 'user', 'inbound', 'Hi, I have a question about the Summer Sale.', 1, 'user', 'read', 1);
+    insertMessage.run('15551234567', 'bot', 'outbound', 'Hello! Thanks for reaching out. How can I help you with our Summer Sale today?', 1, 'bot', 'read', 1);
+    insertMessage.run('15551234567', 'user', 'inbound', 'Is the discount code SUMMER50 applicable on electronics?', 1, 'user', 'delivered', 1);
+    
+    // Bob thread (WhatsApp)
+    insertMessage.run('15559876543', 'user', 'inbound', 'Pricing?', 2, 'user', 'read', 1);
+    insertMessage.run('15559876543', 'agent', 'outbound', 'Hi Bob, our pricing starts at $10/mo.', 2, 'agent', 'read', 1);
+    insertMessage.run('15559876543', 'user', 'inbound', 'Awesome. Can you send the quotation for 5 team members?', 2, 'user', 'read', 1);
+    
+    // Charlie thread (Instagram)
+    insertMessage.run('15555550100', 'user', 'inbound', 'Wow, that story looked amazing! Do you ship to Canada?', 3, 'user', 'read', 1);
+    
+    // David thread (Website Live Chat)
+    insertMessage.run('website_visitor_123', 'user', 'inbound', 'Hello, is anyone online? I want to know more about the CRM integration.', 4, 'user', 'read', 1);
+    insertMessage.run('website_visitor_123', 'bot', 'outbound', 'Hi! I am the Infokart bot. An agent will takeover shortly if you require further assistance.', 4, 'bot', 'read', 1);
 
     // Seed Templates
     const insertTemplate = db.prepare('INSERT INTO templates (name, content, category) VALUES (?, ?, ?)');
@@ -217,6 +352,12 @@ const seedDb = () => {
       null,
       'APPROVED'
     );
+
+    // Seed Inbox Knowledge Base Training content
+    const insertKB = db.prepare('INSERT INTO inbox_knowledge_base (org_id, source_type, title, content) VALUES (?, ?, ?, ?)');
+    insertKB.run(1, 'faq', 'Infokart Pricing Model', 'Infokart features three plans: Starter ($10/mo, 1 channel, 2 team members), Growth ($29/mo, 3 channels, 5 team members), and Enterprise ($99/mo, unlimited channels, unlimited team members, dedicated support).');
+    insertKB.run(1, 'faq', 'Meta API Connection Setup', 'To connect WhatsApp, click on Marketing Workspace, select Embedded Signup, and authorize your Meta Business Account. Sandboxed accounts can send free templates to up to 10 verified numbers.');
+    insertKB.run(1, 'url', 'https://infokart.in/support', 'For customer support, email support@infokart.in or message us on WhatsApp at +15551234567. Normal response time is under 1 hour.');
   }
 };
 

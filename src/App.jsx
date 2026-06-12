@@ -15,6 +15,7 @@ import TeamManagement from './views/TeamManagement';
 import SystemAudit from './views/SystemAudit';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './views/Login';
+import LiveChat from './views/LiveChat';
 
 const ProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
@@ -28,6 +29,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/livechat" element={<LiveChat />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardOverview />} />
