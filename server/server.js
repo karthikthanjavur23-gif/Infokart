@@ -290,6 +290,28 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
     const displayPhoneNumber = phoneData.display_phone_number;
     const verifiedName = phoneData.verified_name;
 
+    // 3.5 Register the Phone Number on Meta Cloud API client (required for sending messages)
+    console.log(`[INFO] Registering phone number ID ${phoneNumberId} on Meta Cloud API client`);
+    try {
+      await axios({
+        method: 'POST',
+        url: `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        data: {
+          messaging_product: 'whatsapp',
+          pin: '123456'
+        }
+      });
+      console.log(`[SUCCESS] Phone number ID ${phoneNumberId} registered successfully`);
+      fs.appendFileSync('signup_debug.log', `\n[SUCCESS] Phone number ID ${phoneNumberId} registered successfully\n`);
+    } catch (regError) {
+      console.error("Failed to register phone number with Meta:", regError.response?.data || regError.message);
+      fs.appendFileSync('signup_debug.log', `\n[WARNING] Registration failed: ${JSON.stringify(regError.response?.data || regError.message)}\n`);
+    }
+
     // 4. Save to Database (Multi-tenant)
     const stmt = db.prepare(`
       INSERT INTO whatsapp_settings (org_id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, status, is_active)
@@ -417,11 +439,34 @@ app.post('/api/whatsapp/verify-phone', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/whatsapp/manual-config', authenticateToken, (req, res) => {
+app.post('/api/whatsapp/manual-config', authenticateToken, async (req, res) => {
   const { accessToken, phoneNumberId, wabaId, verifiedName, nickname } = req.body;
   
   if (!accessToken || !phoneNumberId || !wabaId) {
     return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  // 1. Try to register the phone number ID with Meta Cloud API client
+  try {
+    console.log(`[INFO] Registering manual phone number ID ${phoneNumberId} on Meta Cloud API client`);
+    await axios({
+      method: 'POST',
+      url: `https://graph.facebook.com/v22.0/${phoneNumberId}/register`,
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        messaging_product: 'whatsapp',
+        pin: '123456'
+      }
+    });
+    console.log(`[SUCCESS] Phone number ID ${phoneNumberId} registered successfully`);
+    fs.appendFileSync('signup_debug.log', `\n[SUCCESS] Manual phone number ID ${phoneNumberId} registered successfully\n`);
+  } catch (regError) {
+    const errorDetails = regError.response?.data || regError.message;
+    console.warn("Failed to register manual phone number with Meta:", errorDetails);
+    fs.appendFileSync('signup_debug.log', `\n[WARNING] Manual registration failed/skipped: ${JSON.stringify(errorDetails)}\n`);
   }
 
   try {
