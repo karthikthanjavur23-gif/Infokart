@@ -88,13 +88,20 @@ const WhatsAppChatbot = () => {
     }
   }, [activeBot]);
 
-  const fetchBots = async () => {
+  const fetchBots = async (selectBotId = null) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/bot/list`, { headers: getAuthHeaders() });
       const data = await response.json();
       if (Array.isArray(data)) {
         setBots(data);
         if (data.length > 0) {
+          if (selectBotId) {
+            const newlyCreated = data.find(b => b.id === Number(selectBotId));
+            if (newlyCreated) {
+              setActiveBot(newlyCreated);
+              return;
+            }
+          }
           // Select active bot or first bot
           const active = data.find(b => b.status === 'ACTIVE') || data[0];
           setActiveBot(active);
@@ -162,7 +169,7 @@ const WhatsAppChatbot = () => {
       if (data.success) {
         setNewBotName('');
         setShowNewBotModal(false);
-        await fetchBots();
+        await fetchBots(data.botId);
       }
     } catch (e) {
       console.error("Failed to create bot", e);
@@ -276,7 +283,7 @@ const WhatsAppChatbot = () => {
     
     // Spawn at the center of the viewport
     const x = Math.round((400 - pan.x) / zoom);
-    const y = Math.round((250 - pan.y) / zoom);
+    const y = Math.round((150 - pan.y) / zoom);
 
     const newNode = {
       id: uniqueId,
