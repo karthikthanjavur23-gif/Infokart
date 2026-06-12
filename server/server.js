@@ -699,6 +699,34 @@ app.patch('/api/contacts/:phone_number', authenticateToken, (req, res) => {
   }
 });
 
+app.put('/api/contacts/:id', authenticateToken, (req, res) => {
+  const { name, email, phone_number, tags, notes } = req.body;
+  try {
+    db.prepare(`
+      UPDATE contacts 
+      SET name = COALESCE(?, name), 
+          email = COALESCE(?, email), 
+          phone_number = COALESCE(?, phone_number), 
+          tags = COALESCE(?, tags), 
+          notes = COALESCE(?, notes)
+      WHERE id = ? AND org_id = ?
+    `).run(name || null, email || null, phone_number || null, tags || null, notes || null, req.params.id, req.user.org_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/contacts/:id', authenticateToken, (req, res) => {
+  try {
+    db.prepare('DELETE FROM contacts WHERE id = ? AND org_id = ?').run(req.params.id, req.user.org_id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 app.post('/api/contacts', authenticateToken, (req, res) => {
   const { name, phone_number, tags } = req.body;
   if (!phone_number) return res.status(400).json({ error: "Phone number required" });

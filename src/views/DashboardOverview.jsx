@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL, getAuthHeaders } from '../api/config';
-import { Users, Filter, CheckCircle2, MessageSquare, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { 
+  Users, CheckCircle2, MessageSquare, TrendingUp, ArrowUpRight, 
+  ArrowDownRight, Sparkles, Send, Layout, Shield, ExternalLink
+} from 'lucide-react';
 
 const AreaChart = () => {
-  // Simple SVG Area Chart logic
   const points = [
     [0, 80], [40, 60], [80, 75], [120, 40], [160, 55], [200, 20], [240, 35], [280, 10], [320, 25], [360, 5], [400, 15]
   ];
@@ -12,150 +14,278 @@ const AreaChart = () => {
   const lineData = `M ${points.map(p => p.join(' ')).join(' L ')}`;
 
   return (
-    <div className="w-full h-full relative" style={{ minHeight: '300px' }}>
-      <svg viewBox="0 0 400 100" preserveAspectRatio="none" className="w-full h-full">
+    <div className="w-full h-full relative" style={{ minHeight: '220px' }}>
+      <svg viewBox="0 0 400 100" preserveAspectRatio="none" className="w-full h-[180px]">
         <defs>
           <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.4" />
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.15" />
             <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={pathData} fill="url(#gradient)" className="animate-fade-in" />
-        <path d={lineData} fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" className="animate-fade-in" />
-        
-        {/* Grid lines */}
-        {[25, 50, 75].map(y => <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="var(--color-border-soft)" strokeWidth="0.5" />)}
+        <path d={lineData} fill="none" stroke="var(--color-primary)" strokeWidth="2.5" strokeLinecap="round" className="animate-fade-in" />
+        {[25, 50, 75].map(y => (
+          <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="var(--color-border-soft)" strokeWidth="0.5" strokeDasharray="3 3" />
+        ))}
       </svg>
-      <div className="absolute top-0 left-0 w-full h-full flex justify-between items-end pointer-events-none px-2 pb-1">
+      <div className="flex justify-between items-center mt-3 border-t border-slate-100 pt-2 text-[11px] text-slate-400 font-medium">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-          <span key={day} className="text-xs text-muted font-medium">{day}</span>
+          <span key={day}>{day}</span>
         ))}
       </div>
     </div>
+  );
+};
+
+const Sparkline = ({ points, color = '#7c3aed' }) => {
+  const width = 60;
+  const height = 24;
+  const maxVal = Math.max(...points);
+  const minVal = Math.min(...points);
+  const range = maxVal - minVal || 1;
+  const coords = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * width;
+    const y = height - ((p - minVal) / range) * height + 1;
+    return `${x},${y}`;
+  });
+
+  return (
+    <svg width={width} height={height + 2} className="overflow-visible">
+      <path
+        d={`M ${coords.join(' L ')}`}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 };
 
 const DashboardOverview = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState([
-    { label: 'Total Contacts', value: '...', icon: Users, color: 'var(--color-primary)', trend: '+12%' },
-    { label: 'Delivery Rate', value: '...', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
-    { label: 'Chatbot Activity', value: '...', icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
-    { label: 'Avg. Open Rate', value: '...', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
+    { label: 'Total Contacts', value: '...', icon: Users, color: '#7c3aed', trend: '+12%', points: [12, 14, 15, 18, 20, 22, 25] },
+    { label: 'Delivery Rate', value: '...', icon: CheckCircle2, color: '#10b981', trend: '+0.5%', points: [95, 96, 95.8, 97, 98.1, 98.4, 98.4] },
+    { label: 'Chatbot Activity', value: '...', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, 240] },
+    { label: 'Avg. Open Rate', value: '...', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [58, 60, 59, 61, 62.4, 63.8, 64.2] },
   ]);
   const [recentMessages, setRecentMessages] = useState([]);
+  const [activeCampaigns, setActiveCampaigns] = useState([]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/dashboard`, { headers: getAuthHeaders() });
         const data = await res.json();
         if (data && !data.error) {
           setStats([
-            { label: 'Total Contacts', value: data.totalContacts, icon: Users, color: 'var(--color-primary)', trend: '+12%' },
-            { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: 'var(--color-success)', trend: '+0.5%' },
-            { label: 'Chatbot Activity', value: data.botResponses, icon: MessageSquare, color: 'var(--color-primary)', trend: '+24%' },
-            { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: 'var(--color-warning)', trend: '+8%' },
+            { label: 'Total Contacts', value: data.totalContacts || '0', icon: Users, color: '#7c3aed', trend: '+12%', points: [12, 14, 15, 18, 20, 22, data.totalContacts || 25] },
+            { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: '#10b981', trend: '+0.5%', points: [95, 96, 95.8, 97, 98.1, 98.4, 98.4] },
+            { label: 'Chatbot Activity', value: data.botResponses || '0', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, data.botResponses || 240] },
+            { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [58, 60, 59, 61, 62.4, 63.8, 64.2] },
           ]);
         }
 
+        // Fetch recent messages
         const msgRes = await fetch(`${API_BASE_URL}/api/messages/recent`, { headers: getAuthHeaders() });
         const msgData = await msgRes.json();
         if (Array.isArray(msgData)) {
-          setRecentMessages(msgData);
-        } else {
-          setRecentMessages([]);
+          setRecentMessages(msgData.slice(0, 5));
+        }
+
+        // Fetch campaigns for summary
+        const campRes = await fetch(`${API_BASE_URL}/api/campaigns`, { headers: getAuthHeaders() });
+        const campData = await campRes.json();
+        if (Array.isArray(campData)) {
+          setActiveCampaigns(campData.slice(0, 3));
         }
       } catch (e) {
-        console.error(e);
+        console.error("Dashboard overview query failed:", e);
       }
     };
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000);
+
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 8000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-fade-in flex flex-col gap-6">
+      {/* Header bar */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="mb-1">Dashboard Overview</h1>
-          <p className="text-muted">Welcome back, Karthik! Here's what's happening today.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Workspace Overview</h1>
+          <p className="text-slate-500 text-xs mt-1">Real-time automation flow metrics and CRM activity logs</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
-          <TrendingUp size={18} /> View Reports
+        <button 
+          onClick={() => navigate('/campaigns')}
+          className="btn-primary flex items-center gap-2 hover:bg-[#6d28d9] transition"
+        >
+          <Send size={14} /> New Campaign
         </button>
       </div>
-      
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+
+      {/* KPI stats row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="card animate-slide-up" style={{ animationDelay: `${i * 0.1}s`, position: 'relative', overflow: 'hidden' }}>
-            <div className="flex justify-between items-start mb-4">
-              <div style={{ padding: '12px', borderRadius: '12px', backgroundColor: `${stat.color}15`, color: stat.color }}>
-                <stat.icon size={22} />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold" style={{ color: 'var(--color-success)', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '4px 8px', borderRadius: '20px' }}>
-                {stat.trend} <ArrowUpRight size={12} />
+          <div 
+            key={i} 
+            className="card bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+            style={{ minHeight: '130px' }}
+          >
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-slate-500 font-semibold">{stat.label}</span>
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center" 
+                style={{ backgroundColor: `${stat.color}15`, color: stat.color }}
+              >
+                <stat.icon size={16} />
               </div>
             </div>
-            <div>
-              <div className="text-muted font-semibold text-sm mb-1">{stat.label}</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', color: 'var(--color-text-main)', letterSpacing: '-0.02em' }}>{stat.value}</div>
-            </div>
-            <div style={{ position: 'absolute', bottom: '-10px', right: '-10px', opacity: 0.03 }}>
-              <stat.icon size={80} />
+
+            <div className="flex justify-between items-end mt-4">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 leading-none">{stat.value}</h3>
+                <span className={`text-[10px] font-bold flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full ${
+                  stat.trend.startsWith('+') ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'
+                }`}>
+                  {stat.trend.startsWith('+') ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                  {stat.trend}
+                </span>
+              </div>
+              
+              {/* Sparkline mini-charts */}
+              <div className="pb-1">
+                <Sparkline points={stat.points} color={stat.color} />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '24px' }}>
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <h2>Campaign Performance</h2>
-            <div className="flex gap-2">
-              <span className="flex items-center gap-1 text-xs font-medium text-muted">
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-primary)' }} /> Reach
-              </span>
-              <span className="flex items-center gap-1 text-xs font-medium text-muted">
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--color-border)' }} /> Target
-              </span>
+      {/* Main dashboard body */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column (Area Chart and Campaigns) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          
+          {/* Campaign Chart Card */}
+          <div className="card bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-sm font-bold text-slate-900">Campaign Broadcast Performance</h3>
+              <div className="flex gap-4">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#7c3aed]" /> Inbound Reach
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-200" /> Outbound Delivery
+                </span>
+              </div>
+            </div>
+            <AreaChart />
+          </div>
+
+          {/* Top Campaigns List */}
+          <div className="card bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-4">Active Campaigns</h3>
+            <div className="flex flex-col gap-3">
+              {activeCampaigns.map(camp => (
+                <div key={camp.id} className="flex justify-between items-center p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">{camp.name}</h4>
+                    <p className="text-[10px] text-slate-400 mt-1">Channel: {camp.channel} • Target: {camp.target}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-slate-700 block">{camp.sent} Sent</span>
+                      <span className="text-[9px] text-emerald-500 font-semibold">{Math.round((camp.opened / (camp.sent || 1)) * 100) || 0}% opened</span>
+                    </div>
+                    <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                      camp.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {camp.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {activeCampaigns.length === 0 && (
+                <div className="text-center py-6 text-slate-400 italic text-xs">No active broadcasts.</div>
+              )}
             </div>
           </div>
-          <AreaChart />
         </div>
-        
-        <div className="card">
-          <h2 className="mb-6">Real-time Activity</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {recentMessages.map((msg, i) => (
-              <div key={msg.id} className="flex gap-4 items-center animate-slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
-                <div style={{ position: 'relative' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: msg.direction === 'outbound' ? 'var(--color-primary-light)' : 'var(--color-surface-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: msg.direction === 'outbound' ? 'var(--color-primary)' : 'var(--color-text-muted)' }}>
-                    {msg.direction === 'outbound' ? <ArrowUpRight size={18} /> : <MessageSquare size={18} />}
-                  </div>
-                  {msg.direction === 'inbound' && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--color-success)', border: '2px solid white' }} />}
-                </div>
-                <div className="flex-1 min-width-0">
-                  <div className="text-sm font-bold truncate">{msg.name || msg.phone_number}</div>
-                  <div className="text-xs text-muted truncate">{msg.content}</div>
-                </div>
-                <div className="text-[10px] text-muted whitespace-nowrap">
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
+
+        {/* Right Column (Live Feed & AI Insights) */}
+        <div className="flex flex-col gap-6">
+          
+          {/* AI Insights Panel */}
+          <div className="card bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+              <Sparkles size={16} className="text-[#7c3aed]" /> AI Advisor Insights
+            </h3>
+            <div className="flex flex-col gap-3.5 text-xs leading-relaxed text-slate-600">
+              <div className="p-3 bg-white rounded-lg border border-purple-100/60 shadow-sm">
+                <p className="font-bold text-[#7c3aed] mb-1">Campaign Optimization</p>
+                <p className="text-slate-500 text-[11px]">
+                  Template "summer_sale" has a 12% higher read rate on Wednesday morning. Consider shifting schedule.
+                </p>
               </div>
-            ))}
-            {recentMessages.length === 0 && <div className="text-center py-10 text-muted italic text-xs">Waiting for new messages...</div>}
+              <div className="p-3 bg-white rounded-lg border border-purple-100/60 shadow-sm">
+                <p className="font-bold text-[#7c3aed] mb-1">CRM Lead Alert</p>
+                <p className="text-slate-500 text-[11px]">
+                  3 new contacts reached "Support Handover" state in the last hour. Verify the Shared Team Inbox.
+                </p>
+              </div>
+            </div>
           </div>
-          <button className="w-full mt-6 btn-secondary py-2 text-sm font-bold" onClick={() => navigate('/inbox')}>View Shared Inbox</button>
+
+          {/* Live Activity Log */}
+          <div className="card bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between flex-1">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center justify-between">
+                <span>Realtime Activity</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </h3>
+              <div className="flex flex-col gap-4">
+                {recentMessages.map((msg, i) => (
+                  <div key={msg.id} className="flex gap-3 items-center">
+                    <div className="relative">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                        msg.direction === 'outbound' ? 'bg-purple-50 text-[#7c3aed]' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {msg.direction === 'outbound' ? <Send size={12} /> : <MessageSquare size={12} />}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-slate-800 truncate">{msg.name || msg.phone_number}</div>
+                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{msg.content}</div>
+                    </div>
+                    <div className="text-[9px] text-slate-400 whitespace-nowrap">
+                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                ))}
+                {recentMessages.length === 0 && (
+                  <div className="text-center py-8 text-slate-400 italic text-[11px]">Waiting for conversations...</div>
+                )}
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => navigate('/inbox')}
+              className="w-full mt-6 btn-secondary py-2 text-xs font-bold flex items-center justify-center gap-2 border-slate-200"
+            >
+              Open Team Inbox <ExternalLink size={12} />
+            </button>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
 };
 
-// Quick fix for missing icon
-const MegaphoneActivity = ({size}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 6h2"/><path d="M12 2v2"/><path d="m14 4 1-1"/><path d="m16 8 2-2"/><path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><path d="m5 12 2-2 4 4 6-6"/></svg>;
-
 export default DashboardOverview;
-

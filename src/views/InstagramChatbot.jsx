@@ -43,7 +43,7 @@ const InstagramChatbot = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
         
         {/* Settings Panel */}
-        <div className="flex-col gap-6">
+        <div className="flex flex-col gap-6">
           <div className="card">
             <h3 className="mb-4 flex items-center gap-2"><Settings size={18} /> Global Triggers</h3>
             
@@ -70,7 +70,7 @@ const InstagramChatbot = () => {
 
           <div className="card mt-4">
             <h3 className="mb-4">Chatbot Templates</h3>
-            <div className="flex-col gap-2">
+            <div className="flex flex-col gap-2">
               <button className="btn-secondary flex justify-between" style={{ width: '100%' }}>Lead Generation <LayoutTemplate size={16} /></button>
               <button className="btn-secondary flex justify-between" style={{ width: '100%' }}>Customer Support <LayoutTemplate size={16} /></button>
               <button className="btn-secondary flex justify-between" style={{ width: '100%' }}>Product FAQ <LayoutTemplate size={16} /></button>

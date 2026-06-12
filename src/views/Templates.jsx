@@ -721,7 +721,7 @@ const Templates = () => {
                 }
 
                 return (
-                  <div key={template.id} className="card flex-col group animate-slide-up" style={{ padding: '24px', minHeight: '280px', display: 'flex', flexDirection: 'column', position: 'relative', border: '1px solid var(--color-border-soft)' }}>
+                  <div key={template.id} className="card flex flex-col group animate-slide-up" style={{ padding: '24px', minHeight: '280px', display: 'flex', flexDirection: 'column', position: 'relative', border: '1px solid var(--color-border-soft)' }}>
                     
                     {/* Top Row Badges & Statuses */}
                     <div className="flex justify-between items-start mb-3">
@@ -740,7 +740,7 @@ const Templates = () => {
 
                     {/* Template Name */}
                     <h3 className="font-bold text-main mb-2 tracking-tight" style={{ fontSize: '16px', fontFamily: 'monospace', color: '#0f172a' }}>
-                      {template.template_name}
+                       {template.template_name}
                     </h3>
 
                     {/* Component Info Markers */}
@@ -804,7 +804,7 @@ const Templates = () => {
                         <button 
                           onClick={() => handleDuplicate(template)} 
                           style={{ padding: '6px', borderRadius: '6px', color: 'var(--color-text-muted)' }}
-                          className="hover:bg-slate-100"
+                          className="hover-bg-slate-100"
                           title="Duplicate/Copy"
                         >
                           <Copy size={14} />
@@ -814,7 +814,7 @@ const Templates = () => {
                           <button 
                             onClick={() => handleOpenEdit(template)} 
                             style={{ padding: '6px', borderRadius: '6px', color: 'var(--color-text-muted)' }}
-                            className="hover:bg-slate-100"
+                            className="hover-bg-slate-100"
                             title="Edit Template"
                           >
                             <LayoutTemplate size={14} />
@@ -832,7 +832,7 @@ const Templates = () => {
                         <button 
                           onClick={() => handleDelete(template.id, template.template_name, template.meta_template_id)} 
                           style={{ padding: '6px', borderRadius: '6px', color: 'var(--color-danger)' }}
-                          className="hover:bg-danger/10"
+                          className="hover-bg-danger-10"
                           title="Delete Template"
                         >
                           <Trash2 size={14} />

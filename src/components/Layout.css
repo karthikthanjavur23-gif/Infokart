@@ -15,38 +15,61 @@
 
 .top-nav {
   height: var(--header-height);
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--color-surface);
   border-bottom: 1px solid var(--color-border-soft);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 var(--space-2xl);
+  justify-content: space-between;
+  padding: 0 var(--space-xl);
   z-index: 40;
 }
 
-.user-profile {
+.top-nav-left {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-xs) var(--space-sm);
-  padding-right: var(--space-md);
-  border-radius: var(--radius-xl);
-  transition: all 0.2s ease;
-  cursor: pointer;
+}
+
+.breadcrumb-main {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-btn-header {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
   border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
-.user-profile:hover {
-  background-color: var(--color-surface);
+.icon-btn-header:hover {
+  background-color: var(--color-surface-soft);
   border-color: var(--color-border-soft);
-  box-shadow: var(--shadow-sm);
+  color: var(--color-text-main);
 }
 
-.avatar {
-  width: 44px;
-  height: 44px;
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--color-border);
+  margin: 0 4px;
+}
+
+.header-avatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
   color: white;
@@ -54,13 +77,15 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  cursor: pointer;
   border: 2px solid white;
+  box-shadow: var(--shadow-sm);
 }
 
 .content-area {
   flex: 1;
-  padding: var(--space-2xl) var(--space-3xl);
+  padding: var(--space-lg) var(--space-xl);
   overflow-y: auto;
   scroll-behavior: smooth;
   background-color: var(--color-background);
@@ -83,4 +108,3 @@
 .content-area::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-light);
 }
-

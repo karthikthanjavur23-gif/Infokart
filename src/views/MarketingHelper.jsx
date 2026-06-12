@@ -177,63 +177,65 @@ const MarketingHelper = () => {
         
         {/* Main Chat Area */}
         <div className="card flex flex-col" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ flex: 1, padding: '32px', overflowY: 'auto', backgroundColor: '#fcfdfe', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, padding: '24px', overflowY: 'auto', backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
             {messages.map((msg, idx) => (
               <div key={idx} style={{ 
                 display: 'flex', 
-                gap: '20px', 
-                marginBottom: '32px',
+                gap: '16px', 
+                marginBottom: '24px',
                 flexDirection: msg.role === 'user' ? 'row-reverse' : 'row'
               }} className="animate-slide-up">
                 <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  borderRadius: '12px', 
-                  background: msg.role === 'assistant' ? 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' : 'var(--color-text-main)', 
-                  color: 'white', 
+                  width: '36px', 
+                  height: '36px', 
+                  borderRadius: '10px', 
+                  background: msg.role === 'assistant' ? 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' : '#ffffff', 
+                  color: msg.role === 'assistant' ? 'white' : 'var(--color-primary)', 
+                  border: msg.role === 'assistant' ? 'none' : '1px solid var(--color-border)',
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
                   flexShrink: 0,
                   boxShadow: 'var(--shadow-sm)'
                 }}>
-                  {msg.role === 'assistant' ? <Sparkles size={20} /> : <Zap size={20} />}
+                  {msg.role === 'assistant' ? <Sparkles size={16} /> : <Users size={16} />}
                 </div>
                 <div style={{ 
                   flex: 1, 
-                  maxWidth: '80%',
-                  backgroundColor: msg.role === 'assistant' ? 'white' : 'var(--color-surface-soft)', 
-                  padding: '20px 24px', 
-                  borderRadius: msg.role === 'assistant' ? '0 24px 24px 24px' : '24px 0 24px 24px', 
-                  border: '1px solid var(--color-border-soft)', 
-                  boxShadow: msg.role === 'assistant' ? 'var(--shadow-md)' : 'none', 
+                  maxWidth: '75%',
+                  backgroundColor: msg.role === 'assistant' ? '#f5f3ff' : '#ffffff', 
+                  padding: '16px 20px', 
+                  borderRadius: msg.role === 'assistant' ? '0 16px 16px 16px' : '16px 0 16px 16px', 
+                  border: '1px solid',
+                  borderColor: msg.role === 'assistant' ? 'rgba(124, 58, 237, 0.15)' : 'var(--color-border-soft)', 
+                  boxShadow: 'var(--shadow-sm)', 
                   whiteSpace: 'pre-wrap', 
-                  lineHeight: '1.7',
+                  lineHeight: '1.6',
                   color: 'var(--color-text-main)',
-                  fontSize: '15px'
+                  fontSize: '14px'
                 }}>
                   {msg.content}
                   
                   {msg.role === 'assistant' && idx !== 0 && (
-                    <div className="mt-6 flex flex-wrap gap-3" style={{ borderTop: '1px solid var(--color-border-soft)', paddingTop: '16px' }}>
-                      <button className="btn-secondary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" onClick={() => copyToClipboard(msg.content, idx)}>
-                        {copySuccess === idx ? <Check size={14} style={{ color: 'var(--color-success)' }} /> : <Copy size={14} />} 
+                    <div className="mt-4 flex flex-wrap gap-2.5" style={{ borderTop: '1px solid rgba(124, 58, 237, 0.1)', paddingTop: '12px' }}>
+                      <button className="btn-secondary flex items-center gap-1.5 py-1 px-3 text-xs font-bold border-slate-200" onClick={() => copyToClipboard(msg.content, idx)}>
+                        {copySuccess === idx ? <Check size={12} style={{ color: 'var(--color-success)' }} /> : <Copy size={12} />} 
                         {copySuccess === idx ? 'Copied!' : 'Copy'}
                       </button>
-                      <button className="btn-secondary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" onClick={() => handleSaveAsTemplate(msg.content)}><Save size={14} /> Save Template</button>
-                      <button className="btn-primary flex items-baseline gap-2 py-1 px-3 text-xs font-bold" style={{ border: 'none' }} onClick={() => navigate('/campaigns/create')}><Megaphone size={14} /> Launch Campaign</button>
+                      <button className="btn-secondary flex items-center gap-1.5 py-1 px-3 text-xs font-bold border-slate-200" onClick={() => handleSaveAsTemplate(msg.content)}><Save size={12} /> Save Template</button>
+                      <button className="btn-primary flex items-center gap-1.5 py-1 px-3 text-xs font-bold" style={{ border: 'none' }} onClick={() => navigate('/campaigns/create')}><Megaphone size={12} /> Launch Campaign</button>
                     </div>
                   )}
                 </div>
               </div>
             ))}
             {isGenerating && (
-              <div style={{ display: 'flex', gap: '20px', marginBottom: '32px' }} className="animate-pulse">
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Sparkles size={20} />
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }} className="animate-pulse">
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))', color: 'white', display: 'flex', alignItems: 'center', justifycontent: 'center' }}>
+                  <Sparkles size={16} />
                 </div>
-                <div style={{ backgroundColor: 'white', padding: '16px 24px', borderRadius: '0 24px 24px 24px', border: '1px solid var(--color-border-soft)', boxShadow: 'var(--shadow-md)', color: 'var(--color-text-muted)', fontSize: '15px' }}>
-                  Analyzing your request and crafting magic...
+                <div style={{ backgroundColor: '#f5f3ff', padding: '16px 20px', borderRadius: '0 16px 16px 16px', border: '1px solid rgba(124, 58, 237, 0.15)', boxShadow: 'var(--shadow-sm)', color: 'var(--color-text-muted)', fontSize: '14px' }}>
+                  Generating response strategy...
                 </div>
               </div>
             )}
@@ -241,7 +243,7 @@ const MarketingHelper = () => {
           </div>
 
           {/* Input Area */}
-          <div style={{ padding: '24px 32px', borderTop: '1px solid var(--color-border-soft)', backgroundColor: 'white' }}>
+          <div style={{ padding: '20px 24px', borderTop: '1px solid var(--color-border-soft)', backgroundColor: 'white' }}>
             <div className="flex gap-4 items-end">
               <div className="flex-1" style={{ position: 'relative' }}>
                 <textarea 

@@ -68,23 +68,23 @@ const TeamManagement = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div style={{ display: 'grid', gridGap: '24px' }}>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <table className="w-full text-left">
-            <thead className="bg-surface-soft border-b border-border-soft">
+          <table>
+            <thead>
               <tr>
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Member</th>
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Role</th>
-                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-muted">Joined</th>
-                <th className="px-8 py-5 text-right"></th>
+                <th>Member</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th style={{ textAlign: 'right' }}></th>
               </tr>
             </thead>
             <tbody>
               {members.map((member) => (
-                <tr key={member.id} className="border-b border-border-soft hover:bg-background transition-colors group">
-                  <td className="px-8 py-6">
+                <tr key={member.id} className="group">
+                  <td>
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary-light text-primary flex items-center justify-center font-bold">
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                         {member.name.charAt(0)}
                       </div>
                       <div>
@@ -93,21 +93,22 @@ const TeamManagement = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-6">
+                  <td>
                     <span className={`badge ${member.role === 'admin' ? 'badge-primary' : 'badge-muted'}`} style={{ fontSize: '10px' }}>
                       {member.role.toUpperCase()}
                     </span>
                   </td>
-                  <td className="px-8 py-6 text-sm text-muted">
+                  <td style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
                     {new Date(member.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-8 py-6 text-right">
+                  <td style={{ textAlign: 'right' }}>
                     {currentUser?.role === 'admin' && currentUser?.id !== member.id && (
                       <button 
                         onClick={() => handleRemove(member.id)}
-                        className="p-2 text-muted hover:text-danger hover:bg-danger/5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        className="group-hover-visible hover-bg-danger-10"
+                        style={{ padding: '8px', color: 'var(--color-text-muted)', borderRadius: '8px' }}
                       >
-                        <Trash2 size={18} />
+                        <Trash2 size={18} style={{ color: 'var(--color-danger)' }} />
                       </button>
                     )}
                   </td>
@@ -163,7 +164,6 @@ const TeamManagement = () => {
               <div className="form-group">
                 <label className="label">Permission Role</label>
                 <select 
-                  className="w-full p-4 rounded-xl border border-border-soft bg-background font-bold text-sm"
                   value={newMember.role}
                   onChange={e => setNewMember({...newMember, role: e.target.value})}
                 >
@@ -172,10 +172,10 @@ const TeamManagement = () => {
                 </select>
               </div>
 
-              <div className="flex gap-4 mt-4">
-                <button type="button" className="btn-secondary flex-1 py-4" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-primary flex-1 py-4 flex items-center justify-center gap-2" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <UserPlus size={18} />}
+              <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+                <button type="button" className="btn-secondary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
                   Add to Organization
                 </button>
               </div>
