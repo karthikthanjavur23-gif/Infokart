@@ -462,16 +462,16 @@ const TeamInbox = () => {
       display: grid;
       grid-template-columns: 240px 340px 1fr 320px;
       height: calc(100vh - var(--header-height, 80px) - 20px);
-      background-color: #0b0f19;
+      background-color: #ffffff;
       border-radius: 20px;
       overflow: hidden;
-      border: 1px solid #1e293b;
+      border: 1px solid #e2e8f0;
       font-size: 14px;
     }
     
     .inbox-sidebar {
-      background-color: #0b0f19;
-      border-right: 1px solid #1e293b;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
       padding: 16px 12px;
       display: flex;
       flex-direction: column;
@@ -484,35 +484,35 @@ const TeamInbox = () => {
       justify-content: space-between;
       padding: 10px 14px;
       border-radius: 8px;
-      color: #94a3b8;
+      color: #4b5563;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
     }
 
     .folder-item:hover, .folder-item.active {
-      background-color: #1e293b;
-      color: white;
+      background-color: #f1f5f9;
+      color: #7c3aed;
     }
 
     .inbox-list-pane {
-      background-color: #0f172a;
-      border-right: 1px solid #1e293b;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .inbox-chat-pane {
-      background-color: #090d16;
+      background-color: #0f172a;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .inbox-crm-pane {
-      background-color: #0f172a;
-      border-left: 1px solid #1e293b;
+      background-color: #ffffff;
+      border-left: 1px solid #e2e8f0;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
@@ -528,7 +528,7 @@ const TeamInbox = () => {
     }
 
     .chat-bubble.inbound {
-      background-color: #1e293b;
+      background-color: #f1f5f9;
       color: #f1f5f9;
       align-self: flex-start;
       border-bottom-left-radius: 4px;
@@ -536,7 +536,7 @@ const TeamInbox = () => {
 
     .chat-bubble.outbound {
       background-color: #7c3aed;
-      color: white;
+      color: #7c3aed;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
     }
@@ -565,7 +565,7 @@ const TeamInbox = () => {
 
     .unread-count-dot {
       background-color: #f43f5e;
-      color: white;
+      color: #7c3aed;
       font-size: 10px;
       font-weight: bold;
       width: 18px;
@@ -600,17 +600,17 @@ const TeamInbox = () => {
     .sla-indicator.overdue { background-color: #f43f5e; }
 
     .text-dark-theme {
-      color: #f8fafc;
+      color: #0f172a;
     }
 
     .subtext-dark-theme {
-      color: #94a3b8;
+      color: #4b5563;
     }
 
     .dark-input {
-      background-color: #1e293b;
+      background-color: #f1f5f9;
       border: 1px solid #334155;
-      color: white;
+      color: #7c3aed;
       padding: 8px 12px;
       border-radius: 8px;
       outline: none;
@@ -623,7 +623,7 @@ const TeamInbox = () => {
     }
 
     .crm-section {
-      border-bottom: 1px solid #1e293b;
+      border-bottom: 1px solid #e2e8f0;
       padding-bottom: 18px;
       margin-bottom: 18px;
     }
@@ -654,7 +654,7 @@ const TeamInbox = () => {
           padding: '16px 24px',
           borderRadius: '12px',
           backgroundColor: toast.type === 'error' ? 'var(--color-danger)' : 'var(--color-primary)',
-          color: 'white',
+          color: '#0f172a',
           fontWeight: '600',
           boxShadow: 'var(--shadow-lg)',
           display: 'flex',
@@ -671,7 +671,7 @@ const TeamInbox = () => {
         {/* PANEL 1: SIDEBAR NAVIGATION */}
         <div className="inbox-sidebar">
           <div style={{ padding: '8px 12px', marginBottom: '16px' }}>
-            <h2 className="text-dark-theme flex items-center gap-2" style={{ fontSize: '18px', fontWeight: '800' }}>
+            <h2 className="text-slate-800 flex items-center gap-2" style={{ fontSize: '18px', fontWeight: '800' }}>
               <Inbox size={22} style={{ color: '#7c3aed' }} /> Infokart Inbox
             </h2>
           </div>
@@ -708,20 +708,20 @@ const TeamInbox = () => {
         {/* PANEL 2: CONVERSATION LIST */}
         <div className="inbox-list-pane">
           {/* List Search & Header */}
-          <div style={{ padding: '20px', borderBottom: '1px solid #1e293b' }}>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0' }}>
             <div style={{ position: 'relative', marginBottom: '12px' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
               <input
                 type="text"
                 placeholder="Search customer..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
+                  backgroundColor: '#f5f3ff',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '10px',
                   paddingLeft: '38px',
-                  color: 'white',
+                  color: '#0f172a',
                   margin: 0
                 }}
               />
@@ -730,7 +730,7 @@ const TeamInbox = () => {
             {/* Quick Filter buttons */}
             <div className="flex gap-2 justify-between items-center" style={{ flexWrap: 'wrap' }}>
               {/* Status toggle Open/Closed */}
-              <div className="flex gap-1" style={{ backgroundColor: '#1e293b', padding: '2px', borderRadius: '6px' }}>
+              <div className="flex gap-1" style={{ backgroundColor: '#f5f3ff', padding: '2px', borderRadius: '6px' }}>
                 {['OPEN', 'CLOSED', 'ALL'].map(st => (
                   <button
                     key={st}
@@ -739,8 +739,8 @@ const TeamInbox = () => {
                       fontSize: '11px',
                       padding: '4px 8px',
                       borderRadius: '4px',
-                      backgroundColor: statusFilter === st ? '#334155' : 'transparent',
-                      color: statusFilter === st ? 'white' : '#94a3b8',
+                      backgroundColor: statusFilter === st ? '#7c3aed' : 'transparent',
+                      color: statusFilter === st ? 'white' : '#64748b',
                       fontWeight: '700'
                     }}
                   >
@@ -754,9 +754,9 @@ const TeamInbox = () => {
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
                 style={{
-                  backgroundColor: '#1e293b',
-                  border: '1px solid #334155',
-                  color: 'white',
+                  backgroundColor: '#f5f3ff',
+                  border: '1px solid #e2e8f0',
+                  color: '#0f172a',
                   padding: '4px 8px',
                   borderRadius: '6px',
                   fontSize: '11px',
@@ -790,14 +790,14 @@ const TeamInbox = () => {
                     padding: '12px 14px',
                     borderRadius: '12px',
                     cursor: 'pointer',
-                    backgroundColor: selectedConv?.id === conv.id ? '#1e293b' : 'transparent',
+                    backgroundColor: selectedConv?.id === conv.id ? '#f5f3ff' : 'transparent',
                     display: 'flex',
                     gap: '12px',
                     marginBottom: '4px',
                     border: '1px solid transparent',
                     transition: 'all 0.15s ease'
                   }}
-                  onMouseEnter={(e) => { if (selectedConv?.id !== conv.id) e.currentTarget.style.backgroundColor = '#111827'; }}
+                  onMouseEnter={(e) => { if (selectedConv?.id !== conv.id) e.currentTarget.style.backgroundColor = '#f1f5f9'; }}
                   onMouseLeave={(e) => { if (selectedConv?.id !== conv.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   {/* Channel icon & Avatar */}
@@ -806,8 +806,8 @@ const TeamInbox = () => {
                       width: '42px',
                       height: '42px',
                       borderRadius: '50%',
-                      backgroundColor: selectedConv?.id === conv.id ? '#7c3aed' : '#334155',
-                      color: 'white',
+                      backgroundColor: selectedConv?.id === conv.id ? '#7c3aed' : '#cbd5e1',
+                      color: '#0f172a',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -824,12 +824,12 @@ const TeamInbox = () => {
                       width: '18px',
                       height: '18px',
                       borderRadius: '50%',
-                      backgroundColor: '#0f172a',
+                      backgroundColor: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '9px',
-                      border: '1px solid #1e293b'
+                      border: '1px solid #e2e8f0'
                     }}>
                       {conv.channel === 'WhatsApp' ? <ExternalLink size={10} style={{ color: '#7c3aed' }} /> : conv.channel === 'Instagram' ? <Globe size={10} style={{ color: '#ec4899' }} /> : <Laptop size={10} style={{ color: '#3b82f6' }} />}
                     </div>
@@ -837,15 +837,15 @@ const TeamInbox = () => {
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="flex justify-between items-center mb-1">
-                      <div className="text-dark-theme font-bold" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="text-slate-800 font-bold" style={{ fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {conv.customer_name || conv.customer_phone}
                       </div>
-                      <span className="subtext-dark-theme" style={{ fontSize: '10px' }}>
+                      <span className="text-slate-500" style={{ fontSize: '10px' }}>
                         {conv.last_message_time ? new Date(conv.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                       </span>
                     </div>
 
-                    <div className="subtext-dark-theme text-sm" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div className="text-slate-500 text-sm" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {conv.last_message_sender === 'agent' ? 'You: ' : ''}{conv.last_message_content || 'No messages yet.'}
                     </div>
 
@@ -863,7 +863,7 @@ const TeamInbox = () => {
                       
                       <div className="flex items-center gap-2">
                         {conv.assignee_name && (
-                          <span style={{ fontSize: '9px', backgroundColor: '#334155', color: 'white', padding: '1px 5px', borderRadius: '4px', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '9px', backgroundColor: '#f1f5f9', color: '#0f172a', padding: '1px 5px', borderRadius: '4px', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {conv.assignee_name}
                           </span>
                         )}
@@ -891,14 +891,14 @@ const TeamInbox = () => {
           {selectedConv ? (
             <>
               {/* Chat Header details */}
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, backgroundColor: '#0f172a' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, backgroundColor: '#ffffff' }}>
                 <div className="flex items-center gap-3">
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                     {selectedConv.customer_name?.charAt(0) || '?'}
                   </div>
                   <div>
-                    <h3 className="text-dark-theme font-bold" style={{ fontSize: '15px' }}>{selectedConv.customer_name || selectedConv.customer_phone}</h3>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                    <h3 className="text-slate-800 font-bold" style={{ fontSize: '15px' }}>{selectedConv.customer_name || selectedConv.customer_phone}</h3>
+                    <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                       <span className="flex items-center gap-1">
                         <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
                         Online
@@ -916,14 +916,14 @@ const TeamInbox = () => {
                 <div className="flex items-center gap-3">
                   {/* Assignee select box */}
                   <div className="flex items-center gap-1.5">
-                    <span className="subtext-dark-theme" style={{ fontSize: '11px' }}>Assign:</span>
+                    <span className="text-slate-500" style={{ fontSize: '11px' }}>Assign:</span>
                     <select
                       value={selectedConv.assigned_to || ''}
                       onChange={(e) => handleAssignAgent(e.target.value)}
                       style={{
-                        backgroundColor: '#1e293b',
-                        border: '1px solid #334155',
-                        color: 'white',
+                        backgroundColor: '#f5f3ff',
+                        border: '1px solid #e2e8f0',
+                        color: '#0f172a',
                         padding: '4px 8px',
                         borderRadius: '6px',
                         fontSize: '12px',
@@ -1044,7 +1044,7 @@ const TeamInbox = () => {
 
               {/* Typing indicators or Collision Detection notification banner */}
               {activeAgents.length > 0 && (
-                <div style={{ padding: '6px 24px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #1e293b' }}>
+                <div style={{ padding: '6px 24px', backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', borderTop: '1px solid #e2e8f0' }}>
                   <AlertCircle size={14} />
                   <span>
                     {activeAgents.map(a => a.username).join(', ')} {activeAgents.some(a => a.typing_status === 1) ? 'is typing...' : 'is viewing this conversation'}
@@ -1055,10 +1055,10 @@ const TeamInbox = () => {
 
               {/* AI auto suggest drawer container if open */}
               {aiSuggestionsDrawer && (
-                <div style={{ padding: '16px 24px', backgroundColor: '#0f172a', borderTop: '1px solid #1e293b', position: 'relative' }}>
+                <div style={{ padding: '16px 24px', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0', position: 'relative' }}>
                   <button 
                     onClick={() => setAiSuggestionsDrawer(false)}
-                    style={{ position: 'absolute', top: '12px', right: '12px', color: '#94a3b8' }}
+                    style={{ position: 'absolute', top: '12px', right: '12px', color: '#64748b' }}
                   >
                     <X size={16} />
                   </button>
@@ -1071,7 +1071,7 @@ const TeamInbox = () => {
                     </div>
                   ) : (
                     <div>
-                      <p className="text-dark-theme text-sm leading-relaxed" style={{ backgroundColor: '#1e293b', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
+                      <p className="text-slate-800 text-sm leading-relaxed" style={{ backgroundColor: '#f5f3ff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                         {aiSuggestedReplyText}
                       </p>
                       <button
@@ -1090,7 +1090,7 @@ const TeamInbox = () => {
               )}
 
               {/* Chat Composer Input box */}
-              <div style={{ padding: '20px 24px', borderTop: '1px solid #1e293b', backgroundColor: '#0f172a' }}>
+              <div style={{ padding: '20px 24px', borderTop: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
                 
                 {/* Mode tabs: Reply vs Notes */}
                 <div className="flex gap-2 mb-3">
@@ -1221,13 +1221,13 @@ const TeamInbox = () => {
                         if (e.key === 'Enter') handleSend();
                       }}
                       style={{
-                        backgroundColor: '#1e293b',
-                        border: '1px solid #334155',
+                        backgroundColor: '#f5f3ff',
+                        border: '1px solid #e2e8f0',
                         borderRadius: '12px',
                         height: '44px',
                         paddingLeft: '14px',
                         paddingRight: '120px',
-                        color: 'white',
+                        color: '#0f172a',
                         margin: 0
                       }}
                     />
@@ -1236,7 +1236,7 @@ const TeamInbox = () => {
                     <div style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: '4px' }}>
                       <button 
                         onClick={() => setShowEmojis(!showEmojis)} 
-                        style={{ padding: '6px', color: '#94a3b8' }}
+                        style={{ padding: '6px', color: '#64748b' }}
                         title="Add emoji"
                       >
                         <Smile size={16} />
@@ -1254,7 +1254,7 @@ const TeamInbox = () => {
                       {selectedConv.channel === 'WhatsApp' && composerMode === 'reply' && (
                         <button 
                           onClick={() => setShowTemplates(!showTemplates)} 
-                          style={{ fontSize: '9px', fontWeight: 'bold', padding: '4px 6px', backgroundColor: '#334155', color: '#f1f5f9', borderRadius: '4px' }}
+                          style={{ fontSize: '9px', fontWeight: 'bold', padding: '4px 6px', backgroundColor: '#f1f5f9', color: '#0f172a', borderRadius: '4px' }}
                           title="Inject WhatsApp Cloud templates"
                         >
                           TPL
@@ -1285,7 +1285,7 @@ const TeamInbox = () => {
                 {/* AI Assistant drawer triggers */}
                 {composerMode === 'reply' && replyText.trim() && (
                   <div className="flex gap-2 mt-3" style={{ fontSize: '10px' }}>
-                    <span className="subtext-dark-theme font-bold flex items-center gap-1"><Sparkles size={10} /> AI Polisher:</span>
+                    <span className="text-slate-500 font-bold flex items-center gap-1"><Sparkles size={10} /> AI Polisher:</span>
                     <button onClick={() => handleAiRewrite('Professional')} style={{ color: '#60a5fa', fontWeight: 'bold' }}>👔 Professional</button>
                     <button onClick={() => handleAiRewrite('Friendly')} style={{ color: '#34d399', fontWeight: 'bold' }}>😊 Friendly</button>
                     <button onClick={() => handleAiRewrite('Short')} style={{ color: '#a78bfa', fontWeight: 'bold' }}>⚡ Shorten</button>
@@ -1299,7 +1299,7 @@ const TeamInbox = () => {
               <div style={{ padding: '24px', borderRadius: '50%', backgroundColor: 'rgba(124,58,237,0.08)', color: '#7c3aed' }}>
                 <MessageCircle size={52} />
               </div>
-              <h3 className="text-dark-theme">Shared Team Inbox</h3>
+              <h3 className="text-slate-800">Shared Team Inbox</h3>
               <p className="text-muted text-sm text-center" style={{ maxWidth: '300px' }}>
                 Select a customer chat thread from folders to view messages, assign owners, and reply.
               </p>
@@ -1312,14 +1312,13 @@ const TeamInbox = () => {
           {selectedConv ? (
             <>
               {/* Profile Selection Tabs */}
-              <div className="flex gap-2 mb-6" style={{ borderBottom: '1px solid #1e293b', paddingBottom: '8px' }}>
+              <div className="flex gap-2 mb-6" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
                 <button
                   onClick={() => setActiveRightTab('CRM')}
                   style={{
                     fontSize: '12px',
                     fontWeight: '700',
-                    color: activeRightTab === 'CRM' ? '#7c3aed' : '#94a3b8',
-                    borderBottom: activeRightTab === 'CRM' ? '2px solid #7c3aed' : 'none',
+                    color: activeRightTab === 'CRM' ? '#7c3aed' : '#64748b', borderBottom: activeRightTab === 'CRM' ? '2px solid #7c3aed' : 'none',
                     paddingBottom: '6px',
                     flex: 1
                   }}
@@ -1331,8 +1330,7 @@ const TeamInbox = () => {
                   style={{
                     fontSize: '12px',
                     fontWeight: '700',
-                    color: activeRightTab === 'KB' ? '#7c3aed' : '#94a3b8',
-                    borderBottom: activeRightTab === 'KB' ? '2px solid #7c3aed' : 'none',
+                    color: activeRightTab === 'KB' ? '#7c3aed' : '#64748b', borderBottom: activeRightTab === 'KB' ? '2px solid #7c3aed' : 'none',
                     paddingBottom: '6px',
                     flex: 1
                   }}
@@ -1345,11 +1343,11 @@ const TeamInbox = () => {
                 <div>
                   {/* 1. Customer profile photo block */}
                   <div style={{ textAlign: 'center', marginBottom: '20px' }} className="crm-section">
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', margin: '0 auto 12px' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', margin: '0 auto 12px' }}>
                       {selectedConv.customer_name?.charAt(0) || '?'}
                     </div>
-                    <h3 className="text-dark-theme" style={{ fontSize: '16px' }}>{selectedConv.customer_name || 'Unknown Contact'}</h3>
-                    <span className="subtext-dark-theme" style={{ fontSize: '12px' }}>{selectedConv.customer_phone}</span>
+                    <h3 className="text-slate-800" style={{ fontSize: '16px' }}>{selectedConv.customer_name || 'Unknown Contact'}</h3>
+                    <span className="text-slate-500" style={{ fontSize: '12px' }}>{selectedConv.customer_phone}</span>
                   </div>
 
                   {/* 2. Customer fields info */}
@@ -1359,7 +1357,7 @@ const TeamInbox = () => {
                       {isEditingCRM ? (
                         <input type="text" className="dark-input" value={contactName} onChange={(e) => setContactName(e.target.value)} />
                       ) : (
-                        <p className="text-dark-theme font-medium mt-1">{selectedConv.customer_name || 'Unknown'}</p>
+                        <p className="text-slate-800 font-medium mt-1">{selectedConv.customer_name || 'Unknown'}</p>
                       )}
                     </div>
 
@@ -1368,7 +1366,7 @@ const TeamInbox = () => {
                       {isEditingCRM ? (
                         <input type="email" className="dark-input" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
                       ) : (
-                        <p className="text-dark-theme font-medium mt-1">{selectedConv.customer_email || 'Not provided'}</p>
+                        <p className="text-slate-800 font-medium mt-1">{selectedConv.customer_email || 'Not provided'}</p>
                       )}
                     </div>
 
@@ -1390,7 +1388,7 @@ const TeamInbox = () => {
                       {isEditingCRM ? (
                         <textarea className="dark-input" rows={3} value={contactNotes} onChange={(e) => setContactNotes(e.target.value)} />
                       ) : (
-                        <p className="subtext-dark-theme text-xs italic mt-1 leading-relaxed">{selectedConv.customer_notes || 'No CRM profile notes.'}</p>
+                        <p className="text-slate-500 text-xs italic mt-1 leading-relaxed">{selectedConv.customer_notes || 'No CRM profile notes.'}</p>
                       )}
                     </div>
 
@@ -1415,7 +1413,7 @@ const TeamInbox = () => {
                         setLifecycleStage(e.target.value);
                         showToast(`Lead stage updated to: ${e.target.value}`);
                       }}
-                      style={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: 'white', padding: '8px', borderRadius: '8px', width: '100%', margin: 0 }}
+                      style={{ backgroundColor: '#f5f3ff', border: '1px solid #e2e8f0', color: '#0f172a', padding: '8px', borderRadius: '8px', width: '100%', margin: 0 }}
                     >
                       <option value="New Lead">New Lead</option>
                       <option value="Qualified">Qualified</option>
@@ -1428,14 +1426,14 @@ const TeamInbox = () => {
                   {/* 4. SLA indicators tracker */}
                   <div>
                     <label className="text-[10px] font-black text-muted uppercase tracking-widest block mb-3">SLA Tracking Performance</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#1e293b', padding: '12px', borderRadius: '10px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#f5f3ff', padding: '12px', borderRadius: '10px', fontSize: '12px' }}>
                       <div className="flex justify-between items-center">
-                        <span className="subtext-dark-theme">First Response:</span>
-                        <span className="text-dark-theme font-bold" style={{ color: '#10b981' }}>🟢 Good (&lt; 2m)</span>
+                        <span className="text-slate-500">First Response:</span>
+                        <span className="text-slate-800 font-bold" style={{ color: '#10b981' }}>🟢 Good (&lt; 2m)</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="subtext-dark-theme">Resolution Time:</span>
-                        <span className="text-dark-theme font-bold" style={{ color: '#f59e0b' }}>🟡 Warning (5m)</span>
+                        <span className="text-slate-500">Resolution Time:</span>
+                        <span className="text-slate-800 font-bold" style={{ color: '#f59e0b' }}>🟡 Warning (5m)</span>
                       </div>
                     </div>
                   </div>
@@ -1443,8 +1441,8 @@ const TeamInbox = () => {
               ) : (
                 <div>
                   {/* Knowledge Base training workspace tab */}
-                  <h3 className="text-dark-theme font-bold mb-2" style={{ fontSize: '14px' }}>Train AI Agent</h3>
-                  <p className="subtext-dark-theme text-xs leading-relaxed mb-4">
+                  <h3 className="text-slate-800 font-bold mb-2" style={{ fontSize: '14px' }}>Train AI Agent</h3>
+                  <p className="text-slate-500 text-xs leading-relaxed mb-4">
                     Submit training articles to teach InfoKart's AI. When you trigger AI suggestions in chat, it will consult these answers.
                   </p>
 
@@ -1453,7 +1451,7 @@ const TeamInbox = () => {
                     <select
                       value={kbType}
                       onChange={(e) => setKbType(e.target.value)}
-                      style={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: 'white', padding: '8px', borderRadius: '8px', width: '100%', margin: 0 }}
+                      style={{ backgroundColor: '#f5f3ff', border: '1px solid #e2e8f0', color: '#0f172a', padding: '8px', borderRadius: '8px', width: '100%', margin: 0 }}
                     >
                       <option value="faq">FAQ Answer Pair</option>
                       <option value="url">Website URL Crawl</option>
@@ -1492,13 +1490,13 @@ const TeamInbox = () => {
                     Add Training Data
                   </button>
 
-                  <h3 className="text-dark-theme font-bold mt-6 mb-3" style={{ fontSize: '13px' }}>Current Training pool ({kbArticles.length})</h3>
+                  <h3 className="text-slate-800 font-bold mt-6 mb-3" style={{ fontSize: '13px' }}>Current Training pool ({kbArticles.length})</h3>
                   <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {kbArticles.map((k, i) => (
-                      <div key={i} style={{ backgroundColor: '#1e293b', padding: '8px 10px', borderRadius: '6px', border: '1px solid #334155', fontSize: '11px' }}>
+                      <div key={i} style={{ backgroundColor: '#f5f3ff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '11px' }}>
                         <span style={{ fontWeight: 'bold', color: '#7c3aed', textTransform: 'uppercase' }}>{k.source_type}</span>
-                        <div className="text-dark-theme font-semibold truncate mt-0.5">{k.title}</div>
-                        <div className="subtext-dark-theme truncate mt-0.5">{k.content}</div>
+                        <div className="text-slate-800 font-semibold truncate mt-0.5">{k.title}</div>
+                        <div className="text-slate-500 truncate mt-0.5">{k.content}</div>
                       </div>
                     ))}
                   </div>
