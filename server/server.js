@@ -611,7 +611,7 @@ app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
         });
 
         // Update successful status
-        db.prepare('UPDATE campaign_contacts SET status = "Sent" WHERE campaign_id = ? AND contact_id = ?')
+        db.prepare('UPDATE campaign_contacts SET status = \'Sent\' WHERE campaign_id = ? AND contact_id = ?')
           .run(campaignId, contact.id);
         
         db.prepare('UPDATE campaigns SET sent = sent + 1 WHERE id = ?').run(campaignId);
@@ -623,7 +623,7 @@ app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
         const errorMsg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
         console.error(`Failed to send to ${contact.phone_number}:`, errorMsg);
         fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Meta API Failed in campaign send: ${errorMsg}\n`);
-        db.prepare('UPDATE campaign_contacts SET status = "Failed" WHERE campaign_id = ? AND contact_id = ?')
+        db.prepare('UPDATE campaign_contacts SET status = \'Failed\' WHERE campaign_id = ? AND contact_id = ?')
           .run(campaignId, contact.id);
       }
     }
