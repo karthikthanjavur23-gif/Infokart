@@ -1678,29 +1678,389 @@ app.post('/webhook', async (req, res) => {
       db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, ?, ?, ?, ?, \'user\', 1)')
         .run(phoneNumber, 'user', 'inbound', msgBody, conv.id);
 
-      // 2. Chatbot Auto-Reply Logic
-      const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
-      
-      if (autoReplyEnabled === 'true') {
-        const config = await getWhatsAppConfig();
-        const replyMsg = `Hi! Thanks for your message ("${msgBody}"). I am the automated assistant. We will be right with you.`;
+      // 2. Chatbot Visual Flow Execution (Bypasses old static auto-reply if bot is active)
+      const activeBot = db.prepare("SELECT id FROM bots WHERE org_id = 1 AND status = 'ACTIVE'").get();
+      if (activeBot) {
+        await triggerBotFlow(1, conv.id, msgBody);
+      } else {
+        // Fallback to old auto-reply logic
+        const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
         
-        db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, \'bot\', \'outbound\', ?, ?, \'bot\', 1)')
-          .run(phoneNumber, replyMsg, conv.id);
+        if (autoReplyEnabled === 'true') {
+          const config = await getWhatsAppConfig();
+          const replyMsg = `Hi! Thanks for your message ("${msgBody}"). I am the automated assistant. We will be right with you.`;
+          
+          db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, \'bot\', \'outbound\', ?, ?, \'bot\', 1)')
+            .run(phoneNumber, replyMsg, conv.id);
 
-        if (config && config.phoneNumberId && config.accessToken) {
-           await axios({
-             method: 'POST',
-             url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
-             headers: { 'Authorization': `Bearer ${config.accessToken}` },
-             data: { messaging_product: 'whatsapp', to: phoneNumber, type: 'text', text: { body: replyMsg } },
-           }).catch(e => console.error(e));
+          if (config && config.phoneNumberId && config.accessToken) {
+             await axios({
+               method: 'POST',
+               url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
+               headers: { 'Authorization': `Bearer ${config.accessToken}` },
+               data: { messaging_product: 'whatsapp', to: phoneNumber, type: 'text', text: { body: replyMsg } },
+             }).catch(e => console.error(e));
+          }
         }
       }
     }
     res.sendStatus(200);
   } else {
     res.sendStatus(404);
+  }
+});
+
+// --- WHATSAPP BOT BUILDER ENDPOINTS & RUNTIME ---
+
+async function triggerBotFlow(orgId, conversationId, userMessageText) {
+  try {
+    const conv = db.prepare('SELECT * FROM conversations WHERE id = ? AND org_id = ?').get(conversationId, orgId);
+    if (!conv || conv.bot_paused === 1) return;
+
+    const activeBot = db.prepare("SELECT * FROM bots WHERE org_id = ? AND status = 'ACTIVE'").get(orgId);
+    if (!activeBot) return;
+
+    const flowRow = db.prepare('SELECT * FROM bot_flows WHERE bot_id = ?').get(activeBot.id);
+    if (!flowRow) return;
+
+    const flow = JSON.parse(flowRow.flow_json);
+    const nodes = flow.nodes || [];
+    const connections = flow.connections || [];
+
+    const contact = db.prepare('SELECT * FROM contacts WHERE id = ?').get(conv.customer_id);
+    if (!contact) return;
+
+    let currentNodeId = conv.current_node_id;
+    let node;
+
+    if (!currentNodeId) {
+      // Find Start node
+      const startNode = nodes.find(n => n.type === 'Start');
+      if (startNode) {
+        const conn = connections.find(c => c.from === startNode.id);
+        if (conn) currentNodeId = conn.to;
+      }
+    } else {
+      // Transition from state nodes
+      const stateNode = nodes.find(n => n.id === currentNodeId);
+      if (stateNode) {
+        if (stateNode.type === 'Buttons') {
+          const conn = connections.find(c => c.from === stateNode.id && c.condition?.toLowerCase() === userMessageText.toLowerCase().trim());
+          if (conn) {
+            currentNodeId = conn.to;
+          } else {
+            await sendBotMessage(orgId, contact.phone_number, `Please select one of the options:\n${(stateNode.buttons || []).map(b => `• ${b}`).join('\n')}`, conversationId);
+            return;
+          }
+        } else if (stateNode.type === 'Question') {
+          if (stateNode.crm_action === 'SAVE_NAME') {
+            db.prepare('UPDATE contacts SET name = ? WHERE id = ?').run(userMessageText, contact.id);
+          } else if (stateNode.crm_action === 'SAVE_EMAIL') {
+            db.prepare('UPDATE contacts SET email = ? WHERE id = ?').run(userMessageText, contact.id);
+          }
+          const conn = connections.find(c => c.from === stateNode.id);
+          if (conn) currentNodeId = conn.to;
+          else currentNodeId = null;
+        }
+      }
+    }
+
+    let limit = 0;
+    while (currentNodeId && limit < 10) {
+      limit++;
+      node = nodes.find(n => n.id === currentNodeId);
+      if (!node) break;
+
+      if (node.type === 'Message') {
+        await sendBotMessage(orgId, contact.phone_number, node.content || '', conversationId);
+        const conn = connections.find(c => c.from === node.id);
+        currentNodeId = conn ? conn.to : null;
+      } else if (node.type === 'Buttons') {
+        const buttonsText = `${node.content || 'Select an option:'}\n${(node.buttons || []).map(b => `• ${b}`).join('\n')}`;
+        await sendBotMessage(orgId, contact.phone_number, buttonsText, conversationId);
+        db.prepare('UPDATE conversations SET current_node_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(node.id, conversationId);
+        break;
+      } else if (node.type === 'Question') {
+        await sendBotMessage(orgId, contact.phone_number, node.content || '', conversationId);
+        db.prepare('UPDATE conversations SET current_node_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(node.id, conversationId);
+        break;
+      } else if (node.type === 'Condition') {
+        const match = connections.find(c => c.from === node.id && userMessageText.toLowerCase().includes(c.condition?.toLowerCase() || ''));
+        if (match) {
+          currentNodeId = match.to;
+        } else {
+          const fallback = connections.find(c => c.from === node.id && !c.condition);
+          currentNodeId = fallback ? fallback.to : null;
+        }
+      } else if (node.type === 'AI Reply') {
+        const kbItems = db.prepare('SELECT title, content FROM bot_knowledge_base WHERE bot_id = ?').all(activeBot.id);
+        const kbContext = kbItems.map(k => `[${k.title}]: ${k.content}`).join('\n');
+        let instruction = "You are a customer help assistant. Use the training context below to answer.";
+        if (activeBot.ai_mode === 'CONSERVATIVE') instruction += " Only answer using facts from context. If unknown, reply: I do not know.";
+        const prompt = `Customer Message: ${userMessageText}\n\nContext:\n${kbContext}\n\nResponse:`;
+        const aiResponse = await askAI(prompt, instruction);
+        await sendBotMessage(orgId, contact.phone_number, aiResponse, conversationId);
+        const conn = connections.find(c => c.from === node.id);
+        currentNodeId = conn ? conn.to : null;
+      } else if (node.type === 'Assign Agent') {
+        db.prepare("UPDATE conversations SET assigned_to = NULL, bot_paused = 1, current_node_id = NULL, status = 'open', updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+          .run(conversationId);
+        const logText = "Human takeover triggered. Bot paused.";
+        db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', ?, \'system\', ?)')
+          .run(orgId, 'system', logText, conversationId);
+        await sendBotMessage(orgId, contact.phone_number, node.content || 'Transferring you to an agent...', conversationId);
+        currentNodeId = null;
+        break;
+      } else if (node.type === 'CRM Action') {
+        if (node.crm_action === 'MARK_LEAD') {
+          const current = contact.tags ? contact.tags.split(',') : [];
+          const updated = Array.from(new Set([...current, 'Lead'])).join(',');
+          db.prepare('UPDATE contacts SET tags = ? WHERE id = ?').run(updated, contact.id);
+        }
+        const conn = connections.find(c => c.from === node.id);
+        currentNodeId = conn ? conn.to : null;
+      } else if (node.type === 'Webhook') {
+        console.log(`[BOT WEBHOOK] Triggered URL: ${node.webhook_url}`);
+        const conn = connections.find(c => c.from === node.id);
+        currentNodeId = conn ? conn.to : null;
+      } else if (node.type === 'End') {
+        db.prepare('UPDATE conversations SET current_node_id = NULL WHERE id = ?').run(conversationId);
+        currentNodeId = null;
+        break;
+      } else {
+        currentNodeId = null;
+        break;
+      }
+    }
+
+    if (!currentNodeId) {
+      db.prepare('UPDATE conversations SET current_node_id = NULL WHERE id = ?').run(conversationId);
+    }
+  } catch (e) {
+    console.error("Bot flow error:", e);
+  }
+}
+
+async function sendBotMessage(orgId, phone, content, conversationId) {
+  db.prepare(`
+    INSERT INTO messages (org_id, phone_number, sender, direction, content, status, conversation_id, sender_type)
+    VALUES (?, ?, 'bot', 'outbound', ?, 'sent', ?, 'bot')
+  `).run(orgId, phone, content, conversationId);
+
+  if (!phone.startsWith('visitor_')) {
+    const config = await getWhatsAppConfig(orgId);
+    if (config && config.phoneNumberId && config.accessToken) {
+      try {
+        await axios({
+          method: 'POST',
+          url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
+          headers: { 'Authorization': `Bearer ${config.accessToken}`, 'Content-Type': 'application/json' },
+          data: { messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: content } },
+        });
+      } catch (e) {
+        console.error("Failed to send WhatsApp message inside bot:", e.response?.data || e.message);
+      }
+    } else {
+      console.log(`[BOT SIMULATED] Outbound to ${phone}: ${content}`);
+    }
+  }
+}
+
+app.post('/api/bot/create', authenticateToken, (req, res) => {
+  const orgId = req.user.org_id;
+  const { bot_name } = req.body;
+  if (!bot_name) return res.status(400).json({ error: "bot_name is required" });
+
+  try {
+    const botResult = db.prepare("INSERT INTO bots (org_id, bot_name, status) VALUES (?, ?, 'DRAFT')").run(orgId, bot_name);
+    const botId = botResult.lastInsertRowid;
+    
+    const defaultFlow = {
+      nodes: [
+        { id: 'start', type: 'Start', label: 'Start Bot Trigger', x: 100, y: 150 },
+        { id: 'welcome', type: 'Message', label: 'Welcome Message', content: `Hello 👋! Welcome to ${bot_name}. How can we help you?`, x: 280, y: 150 },
+        { id: 'end', type: 'End', label: 'End Flow', x: 480, y: 150 }
+      ],
+      connections: [
+        { from: 'start', to: 'welcome' },
+        { from: 'welcome', to: 'end' }
+      ]
+    };
+
+    db.prepare("INSERT INTO bot_flows (bot_id, flow_json) VALUES (?, ?)").run(botId, JSON.stringify(defaultFlow));
+    res.json({ success: true, botId });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/bot/list', authenticateToken, (req, res) => {
+  try {
+    const bots = db.prepare("SELECT * FROM bots WHERE org_id = ? ORDER BY id DESC").all(req.user.org_id);
+    res.json(bots);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/bot/flow', authenticateToken, (req, res) => {
+  const { bot_id } = req.query;
+  if (!bot_id) return res.status(400).json({ error: "bot_id is required" });
+
+  try {
+    const flow = db.prepare("SELECT * FROM bot_flows WHERE bot_id = ?").get(bot_id);
+    if (!flow) {
+      return res.json({ nodes: [], connections: [] });
+    }
+    res.json(JSON.parse(flow.flow_json));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/bot/flow', authenticateToken, (req, res) => {
+  const { bot_id, flow_json } = req.body;
+  if (!bot_id || !flow_json) return res.status(400).json({ error: "bot_id and flow_json are required" });
+
+  try {
+    db.prepare(`
+      INSERT INTO bot_flows (bot_id, flow_json) VALUES (?, ?)
+      ON CONFLICT(bot_id) DO UPDATE SET flow_json = excluded.flow_json
+    `).run(bot_id, typeof flow_json === 'string' ? flow_json : JSON.stringify(flow_json));
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/bot/publish', authenticateToken, (req, res) => {
+  const { bot_id, status } = req.body;
+  const orgId = req.user.org_id;
+
+  try {
+    if (status === 'ACTIVE') {
+      db.prepare("UPDATE bots SET status = 'INACTIVE' WHERE org_id = ?").run(orgId);
+    }
+    db.prepare("UPDATE bots SET status = ? WHERE id = ? AND org_id = ?").run(status, bot_id, orgId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/bot/train', authenticateToken, (req, res) => {
+  const { bot_id, source_type, title, content } = req.body;
+  if (!bot_id || !source_type || !content) return res.status(400).json({ error: "Missing required fields" });
+
+  try {
+    db.prepare("INSERT INTO bot_knowledge_base (bot_id, source_type, title, content) VALUES (?, ?, ?, ?)")
+      .run(bot_id, source_type, title || source_type, content);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get('/api/bot/kb-list', authenticateToken, (req, res) => {
+  const { bot_id } = req.query;
+  if (!bot_id) return res.status(400).json({ error: "bot_id is required" });
+
+  try {
+    const kb = db.prepare("SELECT * FROM bot_knowledge_base WHERE bot_id = ? ORDER BY id DESC").all(bot_id);
+    res.json(kb);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/bot/update-settings', authenticateToken, (req, res) => {
+  const { bot_id, bot_name, ai_mode, ai_tone } = req.body;
+  const orgId = req.user.org_id;
+  if (!bot_id) return res.status(400).json({ error: "bot_id is required" });
+
+  try {
+    db.prepare(`
+      UPDATE bots 
+      SET bot_name = COALESCE(?, bot_name), 
+          ai_mode = COALESCE(?, ai_mode), 
+          ai_tone = COALESCE(?, ai_tone),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND org_id = ?
+    `).run(bot_name || null, ai_mode || null, ai_tone || null, bot_id, orgId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/bot/delete/:bot_id', authenticateToken, (req, res) => {
+  const orgId = req.user.org_id;
+  const { bot_id } = req.params;
+  try {
+    db.prepare("DELETE FROM bots WHERE id = ? AND org_id = ?").run(bot_id, orgId);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/bot/kb-delete/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  try {
+    db.prepare("DELETE FROM bot_knowledge_base WHERE id = ?").run(id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
+app.get('/api/bot/analytics', authenticateToken, (req, res) => {
+  const orgId = req.user.org_id;
+  try {
+    const totalConvs = db.prepare("SELECT COUNT(*) as count FROM conversations WHERE org_id = ?").get(orgId).count;
+    const escalatedConvs = db.prepare("SELECT COUNT(*) as count FROM conversations WHERE org_id = ? AND bot_paused = 1").get(orgId).count;
+    const resolvedConvs = Math.max(0, totalConvs - escalatedConvs);
+    const aiResponseCount = db.prepare("SELECT COUNT(*) as count FROM messages WHERE org_id = ? AND sender = 'bot' AND sender_type = 'bot'").get(orgId).count;
+    const rate = totalConvs > 0 ? Math.round((resolvedConvs / totalConvs) * 100) : 80;
+
+    res.json({
+      totalConversations: totalConvs,
+      botResolved: resolvedConvs,
+      humanEscalated: escalatedConvs,
+      aiResponses: aiResponseCount,
+      resolutionRate: rate
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/bot/generate-ai-flow', authenticateToken, async (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) return res.status(400).json({ error: "prompt is required" });
+
+  const systemInstruction = `You are an AI WhatsApp Bot Visual Flow Builder. 
+  Design a stateful bot tree flow based on the user's campaign goal in valid JSON format.
+  
+  Structure the visual coordinates x and y so they look spaced out. 
+  Start node should be at x: 100, y: 150.
+  
+  Strict JSON keys:
+  - "nodes": Array of object: { "id": "node_id", "type": "Start|Message|Buttons|Question|Condition|AI Reply|Assign Agent|End", "label": "Short Title", "content": "Message text copy...", "buttons": ["Label 1", "Label 2"], "crm_action": "SAVE_NAME|SAVE_EMAIL|MARK_LEAD|null", "x": integer, "y": integer }
+  - "connections": Array of object: { "from": "node_id", "to": "node_id", "condition": "Button text or keyword match or null" }
+  
+  Return ONLY valid JSON. No markdown backticks.`;
+
+  try {
+    const aiResponse = await askAI(prompt, systemInstruction);
+    let cleaned = aiResponse;
+    const match = aiResponse.match(/\{[\s\S]*\}/);
+    if (match) cleaned = match[0];
+    const parsed = JSON.parse(cleaned);
+    res.json(parsed);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -1755,12 +2115,18 @@ app.post('/api/public/send', async (req, res) => {
 
     db.prepare("UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(conv.id);
 
-    // Chatbot auto reply trigger
-    const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
-    if (autoReplyEnabled === 'true') {
-      const replyMsg = `Hi there! An agent has been alerted and will takeover shortly. In the meantime, feel free to share your email.`;
-      db.prepare("INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, 'bot', 'outbound', ?, ?, 'bot', 1)")
-        .run(visitor_id, replyMsg, conv.id);
+    // Chatbot Visual Flow Execution (Bypasses old static auto-reply if bot is active)
+    const activeBot = db.prepare("SELECT id FROM bots WHERE org_id = 1 AND status = 'ACTIVE'").get();
+    if (activeBot) {
+      await triggerBotFlow(1, conv.id, content);
+    } else {
+      // Fallback chatbot auto reply trigger
+      const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
+      if (autoReplyEnabled === 'true') {
+        const replyMsg = `Hi there! An agent has been alerted and will takeover shortly. In the meantime, feel free to share your email.`;
+        db.prepare("INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, 'bot', 'outbound', ?, ?, 'bot', 1)")
+          .run(visitor_id, replyMsg, conv.id);
+      }
     }
 
     res.json({ success: true });

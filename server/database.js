@@ -225,6 +225,44 @@ const initDb = () => {
     )
   `);
 
+  // 12. Bot Profiles
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      org_id INTEGER NOT NULL,
+      bot_name TEXT NOT NULL,
+      status TEXT DEFAULT 'DRAFT', -- 'DRAFT', 'ACTIVE', 'INACTIVE'
+      ai_mode TEXT DEFAULT 'BALANCED', -- 'CONSERVATIVE', 'BALANCED', 'CREATIVE'
+      ai_tone TEXT DEFAULT 'FRIENDLY', -- 'FRIENDLY', 'PROFESSIONAL', 'SALES', 'SUPPORT'
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 13. Bot Flows
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_flows (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bot_id INTEGER UNIQUE NOT NULL,
+      flow_json TEXT NOT NULL,
+      FOREIGN KEY(bot_id) REFERENCES bots(id) ON DELETE CASCADE
+    )
+  `);
+
+  // 14. Bot Documents / FAQ Knowledge Base
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_knowledge_base (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      bot_id INTEGER NOT NULL,
+      source_type TEXT NOT NULL, -- 'FAQ', 'PDF', 'URL', 'TEXT'
+      document_url TEXT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(bot_id) REFERENCES bots(id) ON DELETE CASCADE
+    )
+  `);
+
   // Upgrades: Add new fields to existing messages table dynamically
   try {
     db.exec("ALTER TABLE messages ADD COLUMN conversation_id INTEGER;");
@@ -239,6 +277,18 @@ const initDb = () => {
   try {
     db.exec("ALTER TABLE messages ADD COLUMN media_url TEXT;");
     console.log("Added media_url column to messages table.");
+  } catch (e) { /* Already exists */ }
+
+  // Upgrade conversations table dynamically to add bot_paused
+  try {
+    db.exec("ALTER TABLE conversations ADD COLUMN bot_paused INTEGER DEFAULT 0;");
+    console.log("Added bot_paused column to conversations table.");
+  } catch (e) { /* Already exists */ }
+
+  // Upgrade conversations table dynamically to add current_node_id
+  try {
+    db.exec("ALTER TABLE conversations ADD COLUMN current_node_id TEXT;");
+    console.log("Added current_node_id column to conversations table.");
   } catch (e) { /* Already exists */ }
 
   console.log("Database initialized successfully!");
@@ -358,6 +408,36 @@ const seedDb = () => {
     insertKB.run(1, 'faq', 'Infokart Pricing Model', 'Infokart features three plans: Starter ($10/mo, 1 channel, 2 team members), Growth ($29/mo, 3 channels, 5 team members), and Enterprise ($99/mo, unlimited channels, unlimited team members, dedicated support).');
     insertKB.run(1, 'faq', 'Meta API Connection Setup', 'To connect WhatsApp, click on Marketing Workspace, select Embedded Signup, and authorize your Meta Business Account. Sandboxed accounts can send free templates to up to 10 verified numbers.');
     insertKB.run(1, 'url', 'https://infokart.in/support', 'For customer support, email support@infokart.in or message us on WhatsApp at +15551234567. Normal response time is under 1 hour.');
+
+    // Seed Visual WhatsApp Bot profile
+    db.prepare("INSERT OR IGNORE INTO bots (id, org_id, bot_name, status, ai_mode, ai_tone) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(1, 1, 'Main InfoKart Bot', 'ACTIVE', 'BALANCED', 'FRIENDLY');
+
+    // Seed Visual WhatsApp Bot Flow
+    const initialFlow = {
+      nodes: [
+        { id: 'start', type: 'Start', label: 'Start Bot Trigger', x: 100, y: 150 },
+        { id: 'welcome', type: 'Message', label: 'Welcome Message', content: 'Hello 👋! Welcome to InfoKart. How can we help you today?', x: 280, y: 150 },
+        { id: 'options', type: 'Buttons', label: 'Service Selection', content: 'Please select one of the options below:', buttons: ['Sales', 'Support', 'Pricing', 'Talk to Agent'], x: 480, y: 150 },
+        { id: 'sales_flow', type: 'Message', label: 'Sales Route', content: 'Our sales team is ready! Email sales@infokart.in or drop your requirements here.', x: 700, y: 50 },
+        { id: 'pricing_flow', type: 'Message', label: 'Pricing Info', content: 'InfoKart plans are: Starter ($10/mo), Growth ($29/mo), and Enterprise ($99/mo).', x: 700, y: 180 },
+        { id: 'support_handover', type: 'Assign Agent', label: 'Handover to Human', content: 'Escalating conversation to support agent...', x: 700, y: 310 }
+      ],
+      connections: [
+        { from: 'start', to: 'welcome' },
+        { from: 'welcome', to: 'options' },
+        { from: 'options', to: 'sales_flow', condition: 'Sales' },
+        { from: 'options', to: 'pricing_flow', condition: 'Pricing' },
+        { from: 'options', to: 'support_handover', condition: 'Talk to Agent' }
+      ]
+    };
+    db.prepare("INSERT OR IGNORE INTO bot_flows (bot_id, flow_json) VALUES (?, ?)")
+      .run(1, JSON.stringify(initialFlow));
+
+    // Seed Bot Knowledge Base FAQ / Docs
+    const insertBotKB = db.prepare("INSERT OR IGNORE INTO bot_knowledge_base (id, bot_id, source_type, title, content) VALUES (?, ?, ?, ?, ?)");
+    insertBotKB.run(1, 1, 'FAQ', 'Refund Policy', 'We offer a full 14-day money-back guarantee if you are not satisfied with Infokart.');
+    insertBotKB.run(2, 1, 'FAQ', 'Business Hours', 'InfoKart support is available Mon-Fri, 9 AM to 6 PM.');
   }
 };
 
