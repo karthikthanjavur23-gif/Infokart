@@ -574,7 +574,9 @@ app.post('/api/campaigns/:id/send', async (req, res) => {
         await new Promise(r => setTimeout(r, 500));
 
       } catch (err) {
-        console.error(`Failed to send to ${contact.phone_number}:`, err.response?.data || err.message);
+        const errorMsg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+        console.error(`Failed to send to ${contact.phone_number}:`, errorMsg);
+        fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Meta API Failed in campaign send: ${errorMsg}\n`);
         db.prepare('UPDATE campaign_contacts SET status = "Failed" WHERE campaign_id = ? AND contact_id = ?')
           .run(campaignId, contact.id);
       }
@@ -689,7 +691,9 @@ app.post('/api/messages/reply', async (req, res) => {
         data: { messaging_product: 'whatsapp', to: to, type: 'text', text: { body: message } },
       });
     } catch (e) {
-      console.error("Meta API Failed (but saved to local DB):", e.response?.data || e.message);
+      const errorMsg = e.response?.data ? JSON.stringify(e.response.data) : e.message;
+      console.error("Meta API Failed (but saved to local DB):", errorMsg);
+      fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Meta API Failed in /api/messages/reply: ${errorMsg}\n`);
     }
   } else {
     console.log(`[SIMULATED] Outbound to ${to}: ${message}`);
@@ -718,8 +722,10 @@ app.post('/api/send-message', async (req, res) => {
       });
       res.json({ success: true });
     } catch (e) {
-      console.error("Meta API Failed:", e.response?.data || e.message);
-      res.status(500).json({ error: "Meta API Failed", details: e.response?.data || e.message });
+      const errorMsg = e.response?.data ? JSON.stringify(e.response.data) : e.message;
+      console.error("Meta API Failed:", errorMsg);
+      fs.appendFileSync('signup_debug.log', `\n[${new Date().toISOString()}] Meta API Failed in /api/send-message: ${errorMsg}\n`);
+      res.status(500).json({ error: "Meta API Failed", details: errorMsg });
     }
   } else {
     console.log(`[SIMULATED] Outbound to ${to}: ${message}`);
