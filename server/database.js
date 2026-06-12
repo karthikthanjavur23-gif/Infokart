@@ -94,7 +94,10 @@ const initDb = () => {
       verified_name TEXT,
       status TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      org_id INTEGER DEFAULT 1,
+      nickname TEXT,
+      is_active INTEGER DEFAULT 0
     )
   `);
 

@@ -42,7 +42,13 @@ const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) 
 
 // Helper to get Active WhatsApp Config (Authenticated)
 async function getWhatsAppConfig(orgId) {
-  const config = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(orgId);
+  let config;
+  if (orgId) {
+    config = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(orgId);
+  } else {
+    config = db.prepare('SELECT * FROM whatsapp_settings WHERE is_active = 1').get();
+  }
+
   if (config && config.access_token && config.phone_number_id) {
     return {
       id: config.id,
@@ -53,7 +59,12 @@ async function getWhatsAppConfig(orgId) {
     };
   }
   // Fallback to first available if none active
-  const first = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ?').get(orgId);
+  let first;
+  if (orgId) {
+    first = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ?').get(orgId);
+  } else {
+    first = db.prepare('SELECT * FROM whatsapp_settings LIMIT 1').get();
+  }
   if (first) return { id: first.id, accessToken: first.access_token, phoneNumberId: first.phone_number_id, wabaId: first.waba_id };
   return null;
 }
@@ -529,7 +540,7 @@ app.post('/api/campaigns/:id/send', async (req, res) => {
 
   const config = await getWhatsAppConfig();
 
-  if (!config.phoneNumberId || !config.accessToken) {
+  if (!config || !config.phoneNumberId || !config.accessToken) {
     return res.status(400).json({ error: 'WhatsApp is not connected. Connect via Marketing Workspace first.' });
   }
 
@@ -669,7 +680,7 @@ app.post('/api/messages/reply', async (req, res) => {
     .run(to, 'agent', 'outbound', message);
 
   // Attempt to send via Meta API
-  if (config.phoneNumberId && config.accessToken) {
+  if (config && config.phoneNumberId && config.accessToken) {
     try {
       await axios({
         method: 'POST',
@@ -697,7 +708,7 @@ app.post('/api/send-message', async (req, res) => {
   db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
     .run(to, 'agent', 'outbound', message);
 
-  if (config.phoneNumberId && config.accessToken) {
+  if (config && config.phoneNumberId && config.accessToken) {
     try {
       await axios({
         method: 'POST',
@@ -899,7 +910,7 @@ app.post('/webhook', async (req, res) => {
         db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
           .run(phoneNumber, 'bot', 'outbound', replyMsg);
 
-        if (config.phoneNumberId && config.accessToken) {
+        if (config && config.phoneNumberId && config.accessToken) {
            await axios({
              method: 'POST',
              url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
