@@ -536,27 +536,30 @@ const WhatsAppChatbot = () => {
   };
 
   return (
-    <div className="chatbot-theme-wrapper">
+    <div className="chatbot-theme-wrapper animate-fade-in">
       <style>{`
         .chatbot-theme-wrapper {
-          --w-bg: #f8fafc;
+          --w-bg: #ffffff;
+          --w-bg-soft: #f8fafc;
           --w-surface: #ffffff;
-          --w-surface-soft: #f1f5f9;
-          --w-border: #e2e8f0;
-          --w-text: #0f172a;
+          --w-surface-soft: #f8fafc;
+          --w-border: #f1f5f9;
+          --w-border-dark: #cbd5e1;
+          --w-text: #111827;
           --w-text-muted: #64748b;
           --w-accent: #7c3aed;
+          --w-accent-light: #f5f3ff;
           --w-accent-rgb: 124, 58, 237;
           --w-accent-dark: #6d28d9;
           
-          background-color: var(--w-bg);
+          background-color: var(--w-bg-soft);
           color: var(--w-text);
           padding: 24px;
           min-height: calc(100vh - 100px);
           font-family: 'Inter', sans-serif;
-          border-radius: 20px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+          border-radius: 24px;
+          border: 1px solid var(--w-border);
+          box-shadow: var(--shadow-sm);
           transition: all 0.3s ease;
         }
 
@@ -570,13 +573,14 @@ const WhatsAppChatbot = () => {
         }
 
         .bot-pill {
-          background-color: var(--w-surface-soft);
-          border: 1px solid #e2e8f0;
+          background-color: #ffffff;
+          border: 1px solid var(--w-border);
           padding: 8px 16px;
-          border-radius: 12px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           gap: 12px;
+          box-shadow: var(--shadow-sm);
         }
 
         .active-dot {
@@ -603,7 +607,7 @@ const WhatsAppChatbot = () => {
         .workspace-nav {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 6px;
         }
 
         .nav-item {
@@ -611,30 +615,35 @@ const WhatsAppChatbot = () => {
           align-items: center;
           gap: 12px;
           padding: 12px 16px;
-          border-radius: 12px;
+          border-radius: 16px;
           cursor: pointer;
-          font-weight: 600;
+          font-weight: 700;
+          font-size: 13px;
           color: var(--w-text-muted);
           transition: all 0.2s ease;
+          border: 1px solid transparent;
         }
 
         .nav-item:hover {
-          background-color: var(--w-surface);
+          background-color: #ffffff;
           color: var(--w-text);
+          box-shadow: var(--shadow-sm);
         }
 
         .nav-item.active {
           background-color: var(--w-accent);
           color: #ffffff;
+          box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
         }
 
         .workspace-content {
           background-color: var(--w-surface);
-          border-radius: 20px;
-          border: 1px solid #e2e8f0;
-          min-height: 550px;
+          border-radius: 24px;
+          border: 1px solid var(--w-border);
+          min-height: 580px;
           overflow: hidden;
           position: relative;
+          box-shadow: var(--shadow-sm);
         }
 
         /* Dashboard Styles */
@@ -646,16 +655,18 @@ const WhatsAppChatbot = () => {
         }
 
         .dash-card {
-          background-color: var(--w-bg);
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          padding: 20px;
-          transition: transform 0.2s;
+          background-color: #ffffff;
+          border: 1px solid var(--w-border);
+          border-radius: 24px;
+          padding: 24px;
+          box-shadow: var(--shadow-sm);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .dash-card:hover {
           transform: translateY(-2px);
-          border-color: var(--w-accent);
+          box-shadow: var(--shadow-md);
+          border-color: rgba(124, 58, 237, 0.15);
         }
 
         /* Flow Builder Canvas */
@@ -665,8 +676,8 @@ const WhatsAppChatbot = () => {
           position: relative;
           background-color: #ffffff;
           background-image: 
-            radial-gradient(var(--w-border) 1px, transparent 1px);
-          background-size: 20px 20px;
+            radial-gradient(rgba(124, 58, 237, 0.08) 1.5px, transparent 1.5px);
+          background-size: 24px 24px;
           overflow: hidden;
           cursor: grab;
           user-select: none;
@@ -680,50 +691,74 @@ const WhatsAppChatbot = () => {
           position: absolute;
           top: 16px;
           left: 16px;
-          background-color: rgba(255, 255, 255, 0.9);
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
+          background-color: rgba(255, 255, 255, 0.95);
+          border: 1px solid var(--w-border);
+          border-radius: 16px;
           padding: 8px;
           display: flex;
           flex-direction: column;
           gap: 8px;
           z-index: 10;
+          box-shadow: var(--shadow-md);
         }
 
         .canvas-controls {
           position: absolute;
           bottom: 16px;
           left: 16px;
-          background-color: rgba(255, 255, 255, 0.9);
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          background-color: rgba(255, 255, 255, 0.95);
+          border: 1px solid var(--w-border);
+          border-radius: 16px;
           padding: 6px;
           display: flex;
           gap: 8px;
           z-index: 10;
+          box-shadow: var(--shadow-md);
+          align-items: center;
+        }
+
+        .canvas-controls button {
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--w-text-muted);
+          transition: all 0.2s;
+        }
+
+        .canvas-controls button:hover {
+          background-color: var(--w-accent-light);
+          color: var(--w-accent);
         }
 
         .canvas-node {
           position: absolute;
           width: 230px;
-          background-color: var(--w-surface);
-          border: 2px solid var(--w-border);
-          border-radius: 12px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+          background-color: #ffffff;
+          border: 1px solid var(--w-border);
+          border-radius: 16px;
+          box-shadow: var(--shadow-sm);
           z-index: 5;
           cursor: default;
+          transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .canvas-node:hover {
+          box-shadow: var(--shadow-md);
         }
 
         .canvas-node.selected {
           border-color: var(--w-accent);
-          box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08), var(--shadow-md);
         }
 
         .node-header {
-          padding: 8px 12px;
-          background-color: var(--w-surface-soft);
+          padding: 10px 14px;
+          background-color: var(--w-bg-soft);
           border-bottom: 1px solid var(--w-border);
-          border-radius: 10px 10px 0 0;
+          border-radius: 15px 15px 0 0;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -733,7 +768,7 @@ const WhatsAppChatbot = () => {
         }
 
         .node-body {
-          padding: 12px;
+          padding: 14px;
           font-size: 12px;
           color: var(--w-text-muted);
           min-height: 48px;
@@ -743,10 +778,11 @@ const WhatsAppChatbot = () => {
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background-color: #cbd5e1;
+          background-color: var(--w-border-dark);
           border: 2px solid var(--w-surface);
           position: absolute;
           cursor: pointer;
+          transition: transform 0.2s, background-color 0.2s;
         }
 
         .node-port:hover {
@@ -770,7 +806,7 @@ const WhatsAppChatbot = () => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 4px 0;
+          padding: 6px 0;
           position: relative;
         }
 
@@ -783,6 +819,7 @@ const WhatsAppChatbot = () => {
           position: absolute;
           right: -16px;
           cursor: pointer;
+          transition: transform 0.2s;
         }
 
         .node-port-row-output:hover {
@@ -801,21 +838,21 @@ const WhatsAppChatbot = () => {
           z-index: 12;
           display: flex;
           flex-direction: column;
-          box-shadow: -10px 0 20px rgba(0, 0, 0, 0.03);
+          box-shadow: -10px 0 20px rgba(0, 0, 0, 0.02);
         }
 
-        /* AI Prompt Drawer */
+        /* AI Drawer */
         .ai-drawer {
           position: absolute;
           top: 0;
           right: 0;
           width: 360px;
           height: 100%;
-          background-color: var(--w-surface-soft);
+          background-color: #ffffff;
           border-left: 1px solid var(--w-border);
           z-index: 15;
           padding: 24px;
-          box-shadow: -10px 0 30px rgba(0, 0, 0, 0.04);
+          box-shadow: -10px 0 30px rgba(0, 0, 0, 0.03);
           display: flex;
           flex-direction: column;
         }
@@ -830,9 +867,9 @@ const WhatsAppChatbot = () => {
 
         .chat-preview-box {
           height: 380px;
-          background-color: var(--w-bg);
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
+          background-color: var(--w-bg-soft);
+          border: 1px solid var(--w-border);
+          border-radius: 20px;
           padding: 16px;
           overflow-y: auto;
           display: flex;
@@ -843,39 +880,43 @@ const WhatsAppChatbot = () => {
         .chat-bubble {
           max-width: 75%;
           padding: 10px 14px;
-          border-radius: 12px;
+          border-radius: 16px;
           font-size: 13px;
           line-height: 1.5;
+          box-shadow: var(--shadow-sm);
         }
 
         .chat-bubble.inbound {
-          background-color: var(--w-surface-soft);
+          background-color: #ffffff;
           color: var(--w-text);
           align-self: flex-start;
-          border-bottom-left-radius: 4px;
+          border-bottom-left-radius: 2px;
+          border: 1px solid var(--w-border);
         }
 
         .chat-bubble.outbound {
           background-color: var(--w-accent);
           color: #ffffff;
           align-self: flex-end;
-          border-bottom-right-radius: 4px;
+          border-bottom-right-radius: 2px;
         }
 
         /* Dark form controls */
         .w-input, .w-textarea, .w-select {
-          background-color: var(--w-bg);
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          background-color: var(--w-bg-soft);
+          border: 1px solid var(--w-border);
+          border-radius: 12px;
           color: var(--w-text);
           padding: 10px 14px;
           font-size: 13px;
           outline: none;
-          transition: border-color 0.2s;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .w-input:focus, .w-textarea:focus, .w-select:focus {
           border-color: var(--w-accent);
+          background-color: #ffffff;
+          box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.06);
         }
       `}</style>
 
@@ -1253,7 +1294,18 @@ const WhatsAppChatbot = () => {
                       <div
                         key={node.id}
                         className={`canvas-node pointer-events-auto ${isSelected ? 'selected' : ''}`}
-                        style={{ left: `${node.x}px`, top: `${node.y}px` }}
+                        style={{ 
+                          left: `${node.x}px`, 
+                          top: `${node.y}px`,
+                          borderLeft: `4px solid ${
+                            node.type === 'Start' ? '#8b5cf6' :
+                            node.type === 'Message' ? '#3b82f6' :
+                            node.type === 'Buttons' ? '#10b981' :
+                            node.type === 'Question' ? '#f97316' :
+                            node.type === 'AI Reply' ? '#6366f1' :
+                            node.type === 'Assign Agent' ? '#f43f5e' : '#6b7280'
+                          }`
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedNodeId(node.id);
@@ -1263,16 +1315,6 @@ const WhatsAppChatbot = () => {
                         <div 
                           className="node-header text-slate-800"
                           onMouseDown={(e) => handleNodeDragStart(e, node.id)}
-                          style={{
-                            borderLeft: `4px solid ${
-                              node.type === 'Start' ? '#8b5cf6' :
-                              node.type === 'Message' ? '#3b82f6' :
-                              node.type === 'Buttons' ? '#10b981' :
-                              node.type === 'Question' ? '#f97316' :
-                              node.type === 'AI Reply' ? '#6366f1' :
-                              node.type === 'Assign Agent' ? '#f43f5e' : '#6b7280'
-                            }`
-                          }}
                         >
                           <span className="truncate">{node.label}</span>
                           <button 
