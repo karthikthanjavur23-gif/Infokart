@@ -60,7 +60,7 @@
 .nav-item.active {
   background-color: var(--color-primary-light);
   color: var(--color-primary);
-  border-color: rgba(0, 191, 165, 0.1);
+  border-color: rgba(124, 58, 237, 0.1);
   box-shadow: var(--shadow-sm);
 }
 

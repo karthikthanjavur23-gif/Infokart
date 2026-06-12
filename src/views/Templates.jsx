@@ -472,7 +472,7 @@ const Templates = () => {
           <span 
             key={idx} 
             style={{ 
-              background: 'rgba(0, 191, 165, 0.15)', 
+              background: 'rgba(124, 58, 237, 0.15)', 
               color: 'var(--color-primary-dark)', 
               padding: '2px 6px', 
               borderRadius: '4px', 
@@ -554,7 +554,7 @@ const Templates = () => {
           {/* Quick Statistics Row */}
           <div className="grid mb-8" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
             <div className="card" style={{ padding: '16px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ backgroundColor: 'rgba(0, 191, 165, 0.1)', color: 'var(--color-primary-dark)', padding: '10px', borderRadius: '8px' }}>
+              <div style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', color: 'var(--color-primary-dark)', padding: '10px', borderRadius: '8px' }}>
                 <CheckCircle size={22} />
               </div>
               <div>

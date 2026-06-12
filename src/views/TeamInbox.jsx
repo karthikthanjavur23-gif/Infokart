@@ -27,7 +27,8 @@ import {
   FileText,
   User,
   ExternalLink,
-  Laptop
+  Laptop,
+  Globe
 } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../api/config';
 
@@ -534,7 +535,7 @@ const TeamInbox = () => {
     }
 
     .chat-bubble.outbound {
-      background-color: #00bfa5;
+      background-color: #7c3aed;
       color: white;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
@@ -618,7 +619,7 @@ const TeamInbox = () => {
     }
 
     .dark-input:focus {
-      border-color: #00bfa5;
+      border-color: #7c3aed;
     }
 
     .crm-section {
@@ -671,7 +672,7 @@ const TeamInbox = () => {
         <div className="inbox-sidebar">
           <div style={{ padding: '8px 12px', marginBottom: '16px' }}>
             <h2 className="text-dark-theme flex items-center gap-2" style={{ fontSize: '18px', fontWeight: '800' }}>
-              <Inbox size={22} style={{ color: '#00bfa5' }} /> Infokart Inbox
+              <Inbox size={22} style={{ color: '#7c3aed' }} /> Infokart Inbox
             </h2>
           </div>
 
@@ -805,7 +806,7 @@ const TeamInbox = () => {
                       width: '42px',
                       height: '42px',
                       borderRadius: '50%',
-                      backgroundColor: selectedConv?.id === conv.id ? '#00bfa5' : '#334155',
+                      backgroundColor: selectedConv?.id === conv.id ? '#7c3aed' : '#334155',
                       color: 'white',
                       display: 'flex',
                       alignItems: 'center',
@@ -830,7 +831,7 @@ const TeamInbox = () => {
                       fontSize: '9px',
                       border: '1px solid #1e293b'
                     }}>
-                      {conv.channel === 'WhatsApp' ? <ExternalLink size={10} style={{ color: '#00bfa5' }} /> : conv.channel === 'Instagram' ? <Globe size={10} style={{ color: '#ec4899' }} /> : <Laptop size={10} style={{ color: '#3b82f6' }} />}
+                      {conv.channel === 'WhatsApp' ? <ExternalLink size={10} style={{ color: '#7c3aed' }} /> : conv.channel === 'Instagram' ? <Globe size={10} style={{ color: '#ec4899' }} /> : <Laptop size={10} style={{ color: '#3b82f6' }} />}
                     </div>
                   </div>
 
@@ -892,7 +893,7 @@ const TeamInbox = () => {
               {/* Chat Header details */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, backgroundColor: '#0f172a' }}>
                 <div className="flex items-center gap-3">
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#00bfa5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                     {selectedConv.customer_name?.charAt(0) || '?'}
                   </div>
                   <div>
@@ -1061,7 +1062,7 @@ const TeamInbox = () => {
                   >
                     <X size={16} />
                   </button>
-                  <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#00bfa5', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '12px', fontWeight: 'bold', color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                     <Sparkles size={14} /> AI Suggested Response
                   </h4>
                   {isAiSuggesting ? (
@@ -1100,7 +1101,7 @@ const TeamInbox = () => {
                       fontWeight: '700',
                       padding: '4px 12px',
                       borderRadius: '6px',
-                      backgroundColor: composerMode === 'reply' ? '#00bfa5' : 'transparent',
+                      backgroundColor: composerMode === 'reply' ? '#7c3aed' : 'transparent',
                       color: composerMode === 'reply' ? 'white' : '#94a3b8'
                     }}
                   >
@@ -1132,9 +1133,9 @@ const TeamInbox = () => {
                       width: '44px',
                       height: '44px',
                       padding: 0,
-                      backgroundColor: 'rgba(0,191,165,0.1)',
+                      backgroundColor: 'rgba(124,58,237,0.1)',
                       borderColor: 'transparent',
-                      color: '#00bfa5'
+                      color: '#7c3aed'
                     }}
                     title="Suggest answer from Knowledge Base"
                   >
@@ -1198,7 +1199,7 @@ const TeamInbox = () => {
                               setShowQuickReplies(false);
                             }}
                           >
-                            <span className="font-bold text-xs" style={{ color: '#00bfa5' }}>{q.shortcut}</span>
+                            <span className="font-bold text-xs" style={{ color: '#7c3aed' }}>{q.shortcut}</span>
                             <span className="text-xs text-muted truncate flex-1 ml-3">{q.label}</span>
                           </button>
                         ))}
@@ -1245,7 +1246,7 @@ const TeamInbox = () => {
                           const url = window.prompt("Enter an attachment media link URL (e.g. image / PDF):");
                           if (url) setMediaUrl(url);
                         }} 
-                        style={{ padding: '6px', color: mediaUrl ? '#00bfa5' : '#94a3b8' }}
+                        style={{ padding: '6px', color: mediaUrl ? '#7c3aed' : '#94a3b8' }}
                         title="Attach media URL link"
                       >
                         <Paperclip size={16} />
@@ -1272,7 +1273,7 @@ const TeamInbox = () => {
                       width: '44px',
                       height: '44px',
                       padding: 0,
-                      backgroundColor: composerMode === 'note' ? '#eab308' : '#00bfa5',
+                      backgroundColor: composerMode === 'note' ? '#eab308' : '#7c3aed',
                       color: composerMode === 'note' ? 'black' : 'white'
                     }}
                   >
@@ -1295,7 +1296,7 @@ const TeamInbox = () => {
             </>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
-              <div style={{ padding: '24px', borderRadius: '50%', backgroundColor: 'rgba(0,191,165,0.08)', color: '#00bfa5' }}>
+              <div style={{ padding: '24px', borderRadius: '50%', backgroundColor: 'rgba(124,58,237,0.08)', color: '#7c3aed' }}>
                 <MessageCircle size={52} />
               </div>
               <h3 className="text-dark-theme">Shared Team Inbox</h3>
@@ -1317,8 +1318,8 @@ const TeamInbox = () => {
                   style={{
                     fontSize: '12px',
                     fontWeight: '700',
-                    color: activeRightTab === 'CRM' ? '#00bfa5' : '#94a3b8',
-                    borderBottom: activeRightTab === 'CRM' ? '2px solid #00bfa5' : 'none',
+                    color: activeRightTab === 'CRM' ? '#7c3aed' : '#94a3b8',
+                    borderBottom: activeRightTab === 'CRM' ? '2px solid #7c3aed' : 'none',
                     paddingBottom: '6px',
                     flex: 1
                   }}
@@ -1330,8 +1331,8 @@ const TeamInbox = () => {
                   style={{
                     fontSize: '12px',
                     fontWeight: '700',
-                    color: activeRightTab === 'KB' ? '#00bfa5' : '#94a3b8',
-                    borderBottom: activeRightTab === 'KB' ? '2px solid #00bfa5' : 'none',
+                    color: activeRightTab === 'KB' ? '#7c3aed' : '#94a3b8',
+                    borderBottom: activeRightTab === 'KB' ? '2px solid #7c3aed' : 'none',
                     paddingBottom: '6px',
                     flex: 1
                   }}
@@ -1344,7 +1345,7 @@ const TeamInbox = () => {
                 <div>
                   {/* 1. Customer profile photo block */}
                   <div style={{ textAlign: 'center', marginBottom: '20px' }} className="crm-section">
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#00bfa5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', margin: '0 auto 12px' }}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#1e293b', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold', margin: '0 auto 12px' }}>
                       {selectedConv.customer_name?.charAt(0) || '?'}
                     </div>
                     <h3 className="text-dark-theme" style={{ fontSize: '16px' }}>{selectedConv.customer_name || 'Unknown Contact'}</h3>
@@ -1495,7 +1496,7 @@ const TeamInbox = () => {
                   <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {kbArticles.map((k, i) => (
                       <div key={i} style={{ backgroundColor: '#1e293b', padding: '8px 10px', borderRadius: '6px', border: '1px solid #334155', fontSize: '11px' }}>
-                        <span style={{ fontWeight: 'bold', color: '#00bfa5', textTransform: 'uppercase' }}>{k.source_type}</span>
+                        <span style={{ fontWeight: 'bold', color: '#7c3aed', textTransform: 'uppercase' }}>{k.source_type}</span>
                         <div className="text-dark-theme font-semibold truncate mt-0.5">{k.title}</div>
                         <div className="subtext-dark-theme truncate mt-0.5">{k.content}</div>
                       </div>

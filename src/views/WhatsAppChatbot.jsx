@@ -532,15 +532,15 @@ const WhatsAppChatbot = () => {
     <div className="chatbot-theme-wrapper">
       <style>{`
         .chatbot-theme-wrapper {
-          --w-bg: #0b0f19;
-          --w-surface: #111827;
-          --w-surface-soft: #1f2937;
-          --w-border: #374151;
-          --w-text: #f3f4f6;
-          --w-text-muted: #9ca3af;
-          --w-accent: #00bfa5;
-          --w-accent-rgb: 0, 191, 165;
-          --w-accent-dark: #00897b;
+          --w-bg: #f8fafc;
+          --w-surface: #ffffff;
+          --w-surface-soft: #f1f5f9;
+          --w-border: #e2e8f0;
+          --w-text: #0f172a;
+          --w-text-muted: #64748b;
+          --w-accent: #7c3aed;
+          --w-accent-rgb: 124, 58, 237;
+          --w-accent-dark: #6d28d9;
           
           background-color: var(--w-bg);
           color: var(--w-text);
@@ -548,8 +548,8 @@ const WhatsAppChatbot = () => {
           min-height: calc(100vh - 100px);
           font-family: 'Inter', sans-serif;
           border-radius: 20px;
-          border: 1px solid var(--w-border);
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
           transition: all 0.3s ease;
         }
 
@@ -564,7 +564,7 @@ const WhatsAppChatbot = () => {
 
         .bot-pill {
           background-color: var(--w-surface-soft);
-          border: 1px solid var(--w-border);
+          border: 1px solid #e2e8f0;
           padding: 8px 16px;
           border-radius: 12px;
           display: flex;
@@ -624,7 +624,7 @@ const WhatsAppChatbot = () => {
         .workspace-content {
           background-color: var(--w-surface);
           border-radius: 20px;
-          border: 1px solid var(--w-border);
+          border: 1px solid #e2e8f0;
           min-height: 550px;
           overflow: hidden;
           position: relative;
@@ -640,7 +640,7 @@ const WhatsAppChatbot = () => {
 
         .dash-card {
           background-color: var(--w-bg);
-          border: 1px solid var(--w-border);
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           padding: 20px;
           transition: transform 0.2s;
@@ -656,7 +656,7 @@ const WhatsAppChatbot = () => {
           width: 100%;
           height: 600px;
           position: relative;
-          background-color: #080c14;
+          background-color: #ffffff;
           background-image: 
             radial-gradient(var(--w-border) 1px, transparent 1px);
           background-size: 20px 20px;
@@ -673,8 +673,8 @@ const WhatsAppChatbot = () => {
           position: absolute;
           top: 16px;
           left: 16px;
-          background-color: rgba(17, 24, 39, 0.9);
-          border: 1px solid var(--w-border);
+          background-color: rgba(255, 255, 255, 0.9);
+          border: 1px solid #e2e8f0;
           border-radius: 12px;
           padding: 8px;
           display: flex;
@@ -687,8 +687,8 @@ const WhatsAppChatbot = () => {
           position: absolute;
           bottom: 16px;
           left: 16px;
-          background-color: rgba(17, 24, 39, 0.9);
-          border: 1px solid var(--w-border);
+          background-color: rgba(255, 255, 255, 0.9);
+          border: 1px solid #e2e8f0;
           border-radius: 8px;
           padding: 6px;
           display: flex;
@@ -702,14 +702,14 @@ const WhatsAppChatbot = () => {
           background-color: var(--w-surface);
           border: 2px solid var(--w-border);
           border-radius: 12px;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
           z-index: 5;
           cursor: default;
         }
 
         .canvas-node.selected {
           border-color: var(--w-accent);
-          box-shadow: 0 0 12px rgba(0, 191, 165, 0.3);
+          box-shadow: 0 0 12px rgba(124, 58, 237, 0.2);
         }
 
         .node-header {
@@ -794,7 +794,7 @@ const WhatsAppChatbot = () => {
           z-index: 12;
           display: flex;
           flex-direction: column;
-          box-shadow: -10px 0 20px rgba(0, 0, 0, 0.3);
+          box-shadow: -10px 0 20px rgba(0, 0, 0, 0.03);
         }
 
         /* AI Prompt Drawer */
@@ -808,7 +808,7 @@ const WhatsAppChatbot = () => {
           border-left: 1px solid var(--w-border);
           z-index: 15;
           padding: 24px;
-          box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+          box-shadow: -10px 0 30px rgba(0, 0, 0, 0.04);
           display: flex;
           flex-direction: column;
         }
@@ -824,7 +824,7 @@ const WhatsAppChatbot = () => {
         .chat-preview-box {
           height: 380px;
           background-color: var(--w-bg);
-          border: 1px solid var(--w-border);
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           padding: 16px;
           overflow-y: auto;
@@ -858,7 +858,7 @@ const WhatsAppChatbot = () => {
         /* Dark form controls */
         .w-input, .w-textarea, .w-select {
           background-color: var(--w-bg);
-          border: 1px solid var(--w-border);
+          border: 1px solid #e2e8f0;
           border-radius: 8px;
           color: var(--w-text);
           padding: 10px 14px;
@@ -875,28 +875,28 @@ const WhatsAppChatbot = () => {
       {/* Top Header */}
       <div className="workspace-header">
         <div className="flex items-center gap-4">
-          <Workflow size={32} className="text-[#00bfa5]" />
+          <Workflow size={32} className="text-[#7c3aed]" />
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">WhatsApp AI Bot Builder</h1>
-            <p className="text-xs text-slate-400 mt-1">Design stateful customer interaction pathways and FAQ-powered agents</p>
+            <p className="text-xs text-slate-500 mt-1">Design stateful customer interaction pathways and FAQ-powered agents</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {activeBot && (
             <div className="bot-pill">
-              <span className="font-bold text-sm text-slate-200">{activeBot.bot_name}</span>
+              <span className="font-bold text-sm text-slate-700">{activeBot.bot_name}</span>
               <div className="flex items-center gap-2">
                 <span className={activeBot.status === 'ACTIVE' ? 'active-dot' : 'w-2 h-2 rounded-full bg-slate-500'} />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{activeBot.status}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{activeBot.status}</span>
               </div>
               <button 
                 onClick={handleToggleBotStatus}
                 disabled={isBotToggling}
                 className={`text-xs px-3 py-1 rounded-lg font-bold border transition-all ${
                   activeBot.status === 'ACTIVE'
-                    ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                    : 'border-[#00bfa5]/30 text-[#00bfa5] hover:bg-[#00bfa5]/10'
+                    ? 'border-red-500/30 text-red-600 hover:bg-red-500/10'
+                    : 'border-[#7c3aed]/30 text-[#7c3aed] hover:bg-[#7c3aed]/10'
                 }`}
               >
                 {activeBot.status === 'ACTIVE' ? 'Deactivate' : 'Publish / Go Live'}
@@ -905,7 +905,7 @@ const WhatsAppChatbot = () => {
           )}
 
           <select 
-            className="w-select bg-slate-900 border-slate-700 text-sm font-semibold rounded-xl text-white px-3 py-2 cursor-pointer"
+            className="w-select bg-white border-slate-200 text-sm font-semibold rounded-xl text-slate-800 px-3 py-2 cursor-pointer"
             value={activeBot ? activeBot.id : ''}
             onChange={(e) => {
               const selected = bots.find(b => b.id === Number(e.target.value));
@@ -977,7 +977,7 @@ const WhatsAppChatbot = () => {
                 <h2 className="text-lg font-bold">Automation Performance</h2>
                 <button 
                   onClick={fetchAnalytics}
-                  className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                  className="p-2 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition"
                   title="Reload Stats"
                 >
                   <RefreshCw size={18} />
@@ -985,48 +985,48 @@ const WhatsAppChatbot = () => {
               </div>
 
               {analyticsLoading ? (
-                <div className="text-center py-20 text-slate-400">Fetching analytics logs...</div>
+                <div className="text-center py-20 text-slate-500">Fetching analytics logs...</div>
               ) : (
                 <>
                   <div className="dash-grid">
                     <div className="dash-card">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Automated Chats</p>
-                      <h3 className="text-3xl font-black mt-2 text-white">{analytics.totalConversations}</h3>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Automated Chats</p>
+                      <h3 className="text-3xl font-black mt-2 text-slate-800">{analytics.totalConversations}</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Unique customer sessions</p>
                     </div>
                     <div className="dash-card">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Bot Resolved</p>
-                      <h3 className="text-3xl font-black mt-2 text-[#00bfa5]">{analytics.botResolved}</h3>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Bot Resolved</p>
+                      <h3 className="text-3xl font-black mt-2 text-[#7c3aed]">{analytics.botResolved}</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Closed without agent escalation</p>
                     </div>
                     <div className="dash-card">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Human Escalations</p>
-                      <h3 className="text-3xl font-black mt-2 text-orange-400">{analytics.humanEscalated}</h3>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Human Escalations</p>
+                      <h3 className="text-3xl font-black mt-2 text-orange-600">{analytics.humanEscalated}</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Transferred to Shared Team Inbox</p>
                     </div>
                     <div className="dash-card">
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Resolution Rate</p>
-                      <h3 className="text-3xl font-black mt-2 text-[#00bfa5]">{analytics.resolutionRate}%</h3>
+                      <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Resolution Rate</p>
+                      <h3 className="text-3xl font-black mt-2 text-[#7c3aed]">{analytics.resolutionRate}%</h3>
                       <p className="text-[10px] text-slate-500 mt-1">Industry benchmark is 75%</p>
                     </div>
                   </div>
 
                   <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pb-6">
                     {/* Bot selector & deletion logs */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-5">
                       <h3 className="text-sm font-bold mb-4">Trained Chatbot Profiles</h3>
                       <div className="flex flex-col gap-3">
                         {bots.map(b => (
-                          <div key={b.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-800 border border-slate-700/50">
+                          <div key={b.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-50 border border-slate-200/60">
                             <div>
-                              <p className="text-sm font-bold text-white">{b.bot_name}</p>
-                              <span className="text-[10px] text-slate-400 mt-1 block">Created {new Date(b.created_at).toLocaleDateString()}</span>
+                              <p className="text-sm font-bold text-slate-800">{b.bot_name}</p>
+                              <span className="text-[10px] text-slate-500 mt-1 block">Created {new Date(b.created_at).toLocaleDateString()}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${b.status === 'ACTIVE' ? 'bg-[#00bfa5]/10 text-[#00bfa5]' : 'bg-slate-700 text-slate-400'}`}>{b.status}</span>
+                              <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${b.status === 'ACTIVE' ? 'bg-[#7c3aed]/10 text-[#7c3aed]' : 'bg-slate-200 text-slate-500'}`}>{b.status}</span>
                               <button 
                                 onClick={() => handleDeleteBot(b.id)} 
-                                className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-700 transition"
+                                className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-slate-200 transition"
                                 title="Delete Bot"
                               >
                                 <Trash2 size={14} />
@@ -1038,16 +1038,16 @@ const WhatsAppChatbot = () => {
                     </div>
 
                     {/* Live simulator widget */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-5">
                       <h3 className="text-sm font-bold mb-3 flex items-center justify-between">
                         <span>Simulator Sandbox</span>
-                        <span className="text-[10px] font-bold text-[#00bfa5] uppercase tracking-wider">Interactive Test</span>
+                        <span className="text-[10px] font-bold text-[#7c3aed] uppercase tracking-wider">Interactive Test</span>
                       </h3>
                       <div className="flex flex-col gap-3">
                         <div className="flex gap-2">
                           <input 
                             type="text" 
-                            className="w-input flex-1 bg-slate-800 border-slate-700" 
+                            className="w-input flex-1 bg-slate-100 border-slate-200" 
                             placeholder="Enter Test Phone (e.g. +919976893141)" 
                             value={testNumber}
                             onChange={e => setTestNumber(e.target.value)}
@@ -1060,14 +1060,14 @@ const WhatsAppChatbot = () => {
                                 alert(`Simulator session cleared for ${testNumber}`);
                               }
                             }}
-                            className="p-2 border border-slate-700 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                            className="p-2 border border-slate-200 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition"
                             title="Reset Thread"
                           >
                             <RefreshCw size={14} />
                           </button>
                         </div>
 
-                        <div className="chat-preview-box h-[180px] bg-slate-950 border-slate-800 p-3 rounded-lg overflow-y-auto flex flex-col gap-2">
+                        <div className="chat-preview-box h-[180px] bg-slate-50 border-slate-200 p-3 rounded-lg overflow-y-auto flex flex-col gap-2">
                           {simulatorLogs.length === 0 ? (
                             <div className="text-slate-500 italic text-[11px] text-center my-auto">
                               No simulator logs. Enter phone number above and type your greeting below.
@@ -1075,7 +1075,7 @@ const WhatsAppChatbot = () => {
                           ) : (
                             simulatorLogs.map((log, idx) => (
                               <div key={idx} className={`chat-bubble text-[11px] max-w-[85%] ${log.sender === 'user' ? 'outbound' : 'inbound'}`}>
-                                <p className="font-bold text-[9px] mb-0.5 text-slate-400 capitalize">{log.sender}</p>
+                                <p className="font-bold text-[9px] mb-0.5 text-slate-500 capitalize">{log.sender}</p>
                                 <p className="whitespace-pre-wrap">{log.content}</p>
                                 <span className="text-[8px] text-slate-500 float-right mt-1">{log.timestamp}</span>
                               </div>
@@ -1087,7 +1087,7 @@ const WhatsAppChatbot = () => {
                           <input 
                             type="text" 
                             disabled={!testNumber}
-                            className="w-input flex-1 bg-slate-800 border-slate-700" 
+                            className="w-input flex-1 bg-slate-100 border-slate-200" 
                             placeholder={testNumber ? "Type message and press Enter..." : "Enter phone number first"}
                             value={simulatorMessage}
                             onChange={e => setSimulatorMessage(e.target.value)}
@@ -1095,7 +1095,7 @@ const WhatsAppChatbot = () => {
                           <button 
                             type="submit"
                             disabled={isSimulating || !testNumber || !simulatorMessage.trim()}
-                            className="p-2.5 bg-[#00bfa5] text-white rounded-lg hover:bg-[#00897b] transition font-bold"
+                            className="p-2.5 bg-[#7c3aed] text-slate-800 rounded-lg hover:bg-[#6d28d9] transition font-bold"
                           >
                             <Send size={14} />
                           </button>
@@ -1112,15 +1112,15 @@ const WhatsAppChatbot = () => {
           {activeTab === 'builder' && (
             <div className="relative">
               {/* Canvas Action Bar */}
-              <div className="flex justify-between items-center p-3 bg-slate-900 border-b border-slate-800 z-10 relative">
+              <div className="flex justify-between items-center p-3 bg-white border-b border-slate-200 z-10 relative">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-300">Builder Node Toolbox:</span>
+                  <span className="text-xs font-semibold text-slate-600">Builder Node Toolbox:</span>
                   <div className="flex gap-1.5">
                     {['Message', 'Buttons', 'Question', 'Condition', 'AI Reply', 'Assign Agent', 'End'].map(type => (
                       <button
                         key={type}
                         onClick={() => handleAddNode(type)}
-                        className="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2 py-1 rounded transition"
+                        className="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 px-2 py-1 rounded transition"
                       >
                         + {type}
                       </button>
@@ -1131,14 +1131,14 @@ const WhatsAppChatbot = () => {
                 <div className="flex items-center gap-3">
                   <button 
                     onClick={() => setShowAiDrawer(true)}
-                    className="flex items-center gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg transition"
+                    className="flex items-center gap-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-slate-800 font-bold px-3 py-1.5 rounded-lg transition"
                   >
                     <Sparkles size={14} /> Copilot Autocomplete
                   </button>
                   <button 
                     onClick={handleSaveFlow}
                     disabled={isSavingFlow}
-                    className="flex items-center gap-1.5 text-xs bg-[#00bfa5] hover:bg-[#00897b] text-white font-bold px-3 py-1.5 rounded-lg transition"
+                    className="flex items-center gap-1.5 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-slate-800 font-bold px-3 py-1.5 rounded-lg transition"
                   >
                     <Save size={14} /> {isSavingFlow ? 'Saving...' : 'Save Flow'}
                   </button>
@@ -1157,10 +1157,10 @@ const WhatsAppChatbot = () => {
                 <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
                   <defs>
                     <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#00bfa5" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa" />
                     </marker>
                     <marker id="arrow-selected" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6" />
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d28d9" />
                     </marker>
                   </defs>
 
@@ -1200,8 +1200,8 @@ const WhatsAppChatbot = () => {
                           <path
                             d={pathString}
                             fill="none"
-                            stroke={isSelected ? '#3b82f6' : '#00bfa5'}
-                            strokeWidth={isSelected ? 4 : 2}
+                            stroke={isSelected ? '#6d28d9' : '#a78bfa'}
+                            strokeWidth={isSelected ? 3 : 2}
                             markerEnd={isSelected ? 'url(#arrow-selected)' : 'url(#arrow)'}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1217,8 +1217,8 @@ const WhatsAppChatbot = () => {
                                   setSelectedConnectionIndex(idx);
                                   setSelectedNodeId(null);
                                 }}
-                                className={`text-[10px] text-center font-bold px-2 py-0.5 rounded-full border border-slate-700 truncate ${
-                                  isSelected ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-300'
+                                className={`text-[10px] text-center font-bold px-2 py-0.5 rounded-full border border-slate-200 truncate ${
+                                  isSelected ? 'bg-blue-600 text-slate-800' : 'bg-white text-slate-600'
                                 }`}
                               >
                                 {conn.condition}
@@ -1254,7 +1254,7 @@ const WhatsAppChatbot = () => {
                         }}
                       >
                         <div 
-                          className="node-header text-white"
+                          className="node-header text-slate-800"
                           onMouseDown={(e) => handleNodeDragStart(e, node.id)}
                           style={{
                             borderLeft: `4px solid ${
@@ -1270,7 +1270,7 @@ const WhatsAppChatbot = () => {
                           <span className="truncate">{node.label}</span>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteNode(node.id); }}
-                            className="text-slate-400 hover:text-red-400 p-0.5 transition"
+                            className="text-slate-500 hover:text-red-600 p-0.5 transition"
                           >
                             <Trash2 size={12} />
                           </button>
@@ -1280,9 +1280,9 @@ const WhatsAppChatbot = () => {
                           {node.type === 'Message' && <p className="italic font-medium line-clamp-3">"{node.content}"</p>}
                           {node.type === 'Buttons' && (
                             <div className="flex flex-col gap-1.5">
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">{node.content}</p>
+                              <p className="text-[10px] font-bold text-slate-500 mb-1">{node.content}</p>
                               {(node.buttons || []).map((b, idx) => (
-                                <div key={idx} className="node-port-row border border-slate-700 bg-slate-800 text-[10px] px-2 py-1 rounded text-white font-bold">
+                                <div key={idx} className="node-port-row border border-slate-200 bg-slate-100 text-[10px] px-2 py-1 rounded text-slate-800 font-bold">
                                   <span>{b}</span>
                                   <div 
                                     onClick={(e) => { e.stopPropagation(); handlePortClick(node.id, idx, b); }}
@@ -1295,22 +1295,22 @@ const WhatsAppChatbot = () => {
                           {node.type === 'Question' && (
                             <div>
                               <p className="italic line-clamp-2">"{node.content}"</p>
-                              <span className="text-[9px] font-black uppercase text-orange-400 bg-orange-400/10 px-1.5 py-0.5 rounded mt-2 inline-block">
+                              <span className="text-[9px] font-black uppercase text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded mt-2 inline-block">
                                 CRM: {node.crm_action || 'NONE'}
                               </span>
                             </div>
                           )}
                           {node.type === 'Condition' && (
                             <div className="flex flex-col gap-1.5">
-                              <p className="text-[10px] font-bold text-slate-400 mb-1">Keywords Filter:</p>
-                              <div className="node-port-row bg-slate-800 border border-slate-700 text-[10px] px-2 py-1 rounded text-white">
+                              <p className="text-[10px] font-bold text-slate-500 mb-1">Keywords Filter:</p>
+                              <div className="node-port-row bg-slate-100 border border-slate-200 text-[10px] px-2 py-1 rounded text-slate-800">
                                 <span>Condition Matches</span>
                                 <div 
                                   onClick={(e) => { e.stopPropagation(); handlePortClick(node.id, 0, 'Matches'); }}
                                   className="node-port-row-output"
                                 />
                               </div>
-                              <div className="node-port-row bg-slate-800 border border-slate-700 text-[10px] px-2 py-1 rounded text-white">
+                              <div className="node-port-row bg-slate-100 border border-slate-200 text-[10px] px-2 py-1 rounded text-slate-800">
                                 <span>Else / Fallback</span>
                                 <div 
                                   onClick={(e) => { e.stopPropagation(); handlePortClick(node.id, 1, 'Else'); }}
@@ -1326,11 +1326,11 @@ const WhatsAppChatbot = () => {
                           )}
                           {node.type === 'Assign Agent' && (
                             <div>
-                              <p className="text-red-400 font-bold">{node.content}</p>
+                              <p className="text-red-600 font-bold">{node.content}</p>
                             </div>
                           )}
-                          {node.type === 'Start' && <p className="text-slate-400 italic">Triggers on first inbound</p>}
-                          {node.type === 'End' && <p className="text-slate-400 italic">Ends bot thread state</p>}
+                          {node.type === 'Start' && <p className="text-slate-500 italic">Triggers on first inbound</p>}
+                          {node.type === 'End' && <p className="text-slate-500 italic">Ends bot thread state</p>}
                         </div>
 
                         {/* Node Ports */}
@@ -1354,26 +1354,26 @@ const WhatsAppChatbot = () => {
 
               {/* Viewport Zoom & Fit controls */}
               <div className="canvas-controls">
-                <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white" title="Zoom Out"><ZoomOut size={16} /></button>
-                <span className="text-xs font-semibold px-1 py-1 text-slate-300">{Math.round(zoom * 100)}%</span>
-                <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white" title="Zoom In"><ZoomIn size={16} /></button>
-                <button onClick={() => { setPan({ x: 0, y: 0 }); setZoom(1); }} className="p-1.5 hover:bg-slate-800 rounded text-slate-400 hover:text-white" title="Reset View"><Maximize size={16} /></button>
+                <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Zoom Out"><ZoomOut size={16} /></button>
+                <span className="text-xs font-semibold px-1 py-1 text-slate-600">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => setZoom(z => Math.min(1.5, z + 0.1))} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Zoom In"><ZoomIn size={16} /></button>
+                <button onClick={() => { setPan({ x: 0, y: 0 }); setZoom(1); }} className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800" title="Reset View"><Maximize size={16} /></button>
               </div>
 
               {/* Canvas helper alert */}
               {activeLinkSource && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-900 border border-amber-500/50 text-amber-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-3 z-10 shadow-2xl">
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white border border-amber-200 text-amber-600 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-3 z-10 shadow-2xl">
                   <span>Linking from Node "{nodes.find(n => n.id === activeLinkSource.nodeId)?.label}"... Select destination node input port</span>
-                  <button onClick={() => setActiveLinkSource(null)} className="p-1 hover:bg-slate-800 rounded"><X size={12} /></button>
+                  <button onClick={() => setActiveLinkSource(null)} className="p-1 hover:bg-slate-100 rounded"><X size={12} /></button>
                 </div>
               )}
 
               {/* Sidebar Inspector Panel */}
               {selectedNodeId && (
                 <div className="inspector-panel p-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
-                    <h3 className="font-bold text-sm text-slate-200">Configure Node Settings</h3>
-                    <button onClick={() => setSelectedNodeId(null)} className="p-1 text-slate-400 hover:text-white"><X size={16} /></button>
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+                    <h3 className="font-bold text-sm text-slate-700">Configure Node Settings</h3>
+                    <button onClick={() => setSelectedNodeId(null)} className="p-1 text-slate-500 hover:text-slate-800"><X size={16} /></button>
                   </div>
 
                   {(() => {
@@ -1382,7 +1382,7 @@ const WhatsAppChatbot = () => {
                     return (
                       <div className="flex flex-col gap-4 overflow-y-auto flex-1">
                         <div className="form-group flex flex-col gap-1.5">
-                          <label className="text-[11px] font-bold text-slate-400 uppercase">Node Title</label>
+                          <label className="text-[11px] font-bold text-slate-500 uppercase">Node Title</label>
                           <input 
                             type="text" 
                             className="w-input" 
@@ -1394,7 +1394,7 @@ const WhatsAppChatbot = () => {
                         {/* Type specific fields */}
                         {(node.type === 'Message' || node.type === 'Question' || node.type === 'Assign Agent') && (
                           <div className="form-group flex flex-col gap-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase">Message Text</label>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase">Message Text</label>
                             <textarea 
                               rows={5} 
                               className="w-textarea"
@@ -1407,7 +1407,7 @@ const WhatsAppChatbot = () => {
                         {node.type === 'Buttons' && (
                           <div className="flex flex-col gap-3">
                             <div className="form-group flex flex-col gap-1.5">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase">Message Prompt</label>
+                              <label className="text-[11px] font-bold text-slate-500 uppercase">Message Prompt</label>
                               <input 
                                 type="text" 
                                 className="w-input" 
@@ -1416,7 +1416,7 @@ const WhatsAppChatbot = () => {
                               />
                             </div>
                             <div className="flex flex-col gap-2">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase">Quick Reply Options</label>
+                              <label className="text-[11px] font-bold text-slate-500 uppercase">Quick Reply Options</label>
                               {(node.buttons || []).map((b, bIdx) => (
                                 <div key={bIdx} className="flex gap-2">
                                   <input 
@@ -1436,7 +1436,7 @@ const WhatsAppChatbot = () => {
                                       // Remove connections tied to this condition
                                       setConnections(prev => prev.filter(c => !(c.from === node.id && c.condition === b)));
                                     }}
-                                    className="p-1.5 text-slate-400 hover:text-red-400"
+                                    className="p-1.5 text-slate-500 hover:text-red-600"
                                   >
                                     <Trash2 size={14} />
                                   </button>
@@ -1447,7 +1447,7 @@ const WhatsAppChatbot = () => {
                                   const updated = [...(node.buttons || []), `Option ${(node.buttons || []).length + 1}`];
                                   updateSelectedNodeField('buttons', updated);
                                 }}
-                                className="text-xs text-[#00bfa5] font-bold flex items-center gap-1.5 mt-1 self-start"
+                                className="text-xs text-[#7c3aed] font-bold flex items-center gap-1.5 mt-1 self-start"
                               >
                                 <Plus size={14} /> Add Quick Reply
                               </button>
@@ -1457,7 +1457,7 @@ const WhatsAppChatbot = () => {
 
                         {node.type === 'Question' && (
                           <div className="form-group flex flex-col gap-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase">Save Input to CRM Field</label>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase">Save Input to CRM Field</label>
                             <select 
                               className="w-select"
                               value={node.crm_action || ''}
@@ -1473,7 +1473,7 @@ const WhatsAppChatbot = () => {
                         {node.type === 'Condition' && (
                           <div className="flex flex-col gap-3">
                             <div className="form-group flex flex-col gap-1.5">
-                              <label className="text-[11px] font-bold text-slate-400 uppercase">Filter Keywords</label>
+                              <label className="text-[11px] font-bold text-slate-500 uppercase">Filter Keywords</label>
                               <input 
                                 type="text" 
                                 className="w-input"
@@ -1481,7 +1481,7 @@ const WhatsAppChatbot = () => {
                                 value={node.content}
                                 onChange={(e) => updateSelectedNodeField('content', e.target.value)}
                               />
-                              <p className="text-[9px] text-slate-400 leading-relaxed">
+                              <p className="text-[9px] text-slate-500 leading-relaxed">
                                 Checks if user message contains any comma-separated values to route to "Matches" transition.
                               </p>
                             </div>
@@ -1489,9 +1489,9 @@ const WhatsAppChatbot = () => {
                         )}
 
                         {node.type === 'AI Reply' && (
-                          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800 text-xs flex flex-col gap-2">
-                            <p className="font-bold text-[#00bfa5]">AI Model Context Routing</p>
-                            <p className="text-slate-400 text-[10px] leading-relaxed">
+                          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs flex flex-col gap-2">
+                            <p className="font-bold text-[#7c3aed]">AI Model Context Routing</p>
+                            <p className="text-slate-500 text-[10px] leading-relaxed">
                               This node pauses the manual tree flow, extracts facts from the FAQ knowledge base (managed in settings tab), and feeds it to Gemini to reply contextually.
                             </p>
                           </div>
@@ -1499,7 +1499,7 @@ const WhatsAppChatbot = () => {
 
                         <button 
                           onClick={() => handleDeleteNode(node.id)}
-                          className="mt-6 flex items-center justify-center gap-2 w-full py-2 bg-red-950 hover:bg-red-900 border border-red-500/20 rounded-lg text-xs font-bold text-red-400 transition"
+                          className="mt-6 flex items-center justify-center gap-2 w-full py-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-bold text-red-600 transition"
                         >
                           <Trash2 size={14} /> Delete Selected Node
                         </button>
@@ -1512,9 +1512,9 @@ const WhatsAppChatbot = () => {
               {/* Inspector Connection Panel */}
               {selectedConnectionIndex !== null && (
                 <div className="inspector-panel p-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
-                    <h3 className="font-bold text-sm text-slate-200">Connection Transition</h3>
-                    <button onClick={() => setSelectedConnectionIndex(null)} className="p-1 text-slate-400 hover:text-white"><X size={16} /></button>
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+                    <h3 className="font-bold text-sm text-slate-700">Connection Transition</h3>
+                    <button onClick={() => setSelectedConnectionIndex(null)} className="p-1 text-slate-500 hover:text-slate-800"><X size={16} /></button>
                   </div>
 
                   {(() => {
@@ -1524,14 +1524,14 @@ const WhatsAppChatbot = () => {
                     const toNode = nodes.find(n => n.id === conn.to);
                     return (
                       <div className="flex flex-col gap-4 flex-1">
-                        <div className="text-xs text-slate-400 leading-relaxed">
+                        <div className="text-xs text-slate-500 leading-relaxed">
                           <p className="mb-2"><strong>From Node:</strong> {fromNode?.label || conn.from}</p>
                           <p className="mb-2"><strong>To Node:</strong> {toNode?.label || conn.to}</p>
                         </div>
 
                         {(fromNode?.type === 'Buttons' || fromNode?.type === 'Condition') && (
                           <div className="form-group flex flex-col gap-1.5">
-                            <label className="text-[11px] font-bold text-slate-400 uppercase">Match Condition Value</label>
+                            <label className="text-[11px] font-bold text-slate-500 uppercase">Match Condition Value</label>
                             <input 
                               type="text" 
                               className="w-input text-xs" 
@@ -1546,7 +1546,7 @@ const WhatsAppChatbot = () => {
 
                         <button 
                           onClick={() => handleDeleteConnection(selectedConnectionIndex)}
-                          className="mt-6 flex items-center justify-center gap-2 w-full py-2 bg-red-950 hover:bg-red-900 border border-red-500/20 rounded-lg text-xs font-bold text-red-400 transition"
+                          className="mt-6 flex items-center justify-center gap-2 w-full py-2 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-xs font-bold text-red-600 transition"
                         >
                           <Trash2 size={14} /> Delete Connection
                         </button>
@@ -1559,20 +1559,20 @@ const WhatsAppChatbot = () => {
               {/* Gemini AI Drawer Panel */}
               {showAiDrawer && (
                 <div className="ai-drawer">
-                  <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
-                    <h3 className="font-bold text-sm text-purple-400 flex items-center gap-2">
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-200 mb-4">
+                    <h3 className="font-bold text-sm text-purple-600 flex items-center gap-2">
                       <Sparkles size={16} /> Gemini Flow Autocomplete
                     </h3>
-                    <button onClick={() => setShowAiDrawer(false)} className="p-1 text-slate-400 hover:text-white"><X size={16} /></button>
+                    <button onClick={() => setShowAiDrawer(false)} className="p-1 text-slate-500 hover:text-slate-800"><X size={16} /></button>
                   </div>
 
                   <div className="flex flex-col gap-4 flex-1">
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
                       Describe your customer campaign goal. Gemini will outline nodes, routing choices, and keywords, immediately drafting the visual flow onto the builder.
                     </p>
                     <textarea 
                       rows={8} 
-                      className="w-textarea bg-slate-900 border-slate-700/60"
+                      className="w-textarea bg-white border-slate-200/60"
                       placeholder="e.g. Design a welcome sequence for a hair salon. Ask for name, show quick replies: Booking, Pricing, or Contact. If booking, send calendar link. If pricing, show cost list. Otherwise route to live human support."
                       value={aiPrompt}
                       onChange={e => setAiPrompt(e.target.value)}
@@ -1581,7 +1581,7 @@ const WhatsAppChatbot = () => {
                     <button
                       onClick={handleGenerateAiFlow}
                       disabled={isGeneratingAiFlow || !aiPrompt.trim()}
-                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/10"
+                      className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-slate-800 font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/10"
                     >
                       {isGeneratingAiFlow ? (
                         <>
@@ -1604,14 +1604,14 @@ const WhatsAppChatbot = () => {
           {activeTab === 'ai' && (
             <div className="p-6">
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <Cpu size={22} className="text-[#00bfa5]" /> AI Model Personalities
+                <Cpu size={22} className="text-[#7c3aed]" /> AI Model Personalities
               </h2>
 
               <div className="max-w-2xl flex flex-col gap-8">
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-xl flex flex-col gap-6">
                   <div className="form-group flex flex-col gap-2">
-                    <label className="text-sm font-bold text-slate-200">Intelligence Retrieval Mode</label>
-                    <p className="text-xs text-slate-400 leading-relaxed mb-1">
+                    <label className="text-sm font-bold text-slate-700">Intelligence Retrieval Mode</label>
+                    <p className="text-xs text-slate-500 leading-relaxed mb-1">
                       Adjusts how strictly the bot answers from the Knowledge Base training logs vs creative general knowledge.
                     </p>
                     <div className="grid grid-cols-3 gap-3">
@@ -1625,8 +1625,8 @@ const WhatsAppChatbot = () => {
                           onClick={() => setAiMode(item.mode)}
                           className={`p-4 rounded-xl border text-center cursor-pointer transition ${
                             aiMode === item.mode 
-                              ? 'border-[#00bfa5] bg-[#00bfa5]/5 text-white' 
-                              : 'border-slate-800 bg-slate-950 text-slate-400'
+                              ? 'border-[#7c3aed] bg-[#7c3aed]/5 text-slate-800' 
+                              : 'border-slate-200 bg-slate-50 text-slate-500'
                           }`}
                         >
                           <span className="font-bold text-xs block mb-1">{item.label}</span>
@@ -1637,8 +1637,8 @@ const WhatsAppChatbot = () => {
                   </div>
 
                   <div className="form-group flex flex-col gap-2">
-                    <label className="text-sm font-bold text-slate-200">Conversational Accent & Tone</label>
-                    <p className="text-xs text-slate-400 leading-relaxed mb-1">
+                    <label className="text-sm font-bold text-slate-700">Conversational Accent & Tone</label>
+                    <p className="text-xs text-slate-500 leading-relaxed mb-1">
                       Applies conversational styles to match brand objectives.
                     </p>
                     <div className="grid grid-cols-4 gap-3">
@@ -1648,8 +1648,8 @@ const WhatsAppChatbot = () => {
                           onClick={() => setAiTone(t)}
                           className={`p-3 rounded-lg border text-center cursor-pointer font-bold text-xs uppercase transition ${
                             aiTone === t
-                              ? 'border-[#00bfa5] bg-[#00bfa5]/5 text-[#00bfa5]' 
-                              : 'border-slate-800 bg-slate-950 text-slate-400'
+                              ? 'border-[#7c3aed] bg-[#7c3aed]/5 text-[#7c3aed]' 
+                              : 'border-slate-200 bg-slate-50 text-slate-500'
                           }`}
                         >
                           {t}
@@ -1675,7 +1675,7 @@ const WhatsAppChatbot = () => {
           {activeTab === 'kb' && (
             <div className="p-6">
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <BookOpen size={22} className="text-[#00bfa5]" /> FAQ Intelligence Knowledge Base
+                <BookOpen size={22} className="text-[#7c3aed]" /> FAQ Intelligence Knowledge Base
               </h2>
 
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
@@ -1684,20 +1684,20 @@ const WhatsAppChatbot = () => {
                   <h3 className="text-sm font-bold mb-4">Trained Q&A Segments ({kbItems.length})</h3>
                   <div className="flex flex-col gap-3 max-h-[480px] overflow-y-auto pr-2">
                     {kbItems.length === 0 ? (
-                      <div className="text-center py-20 bg-slate-900/30 border border-dashed border-slate-800 rounded-xl text-slate-400 italic text-sm">
+                      <div className="text-center py-20 bg-white/30 border border-dashed border-slate-200 rounded-xl text-slate-500 italic text-sm">
                         No training data logged for this chatbot. Add Q&A fields in the panel on the right.
                       </div>
                     ) : (
                       kbItems.map(item => (
-                        <div key={item.id} className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex justify-between items-start gap-4">
+                        <div key={item.id} className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl flex justify-between items-start gap-4">
                           <div className="flex-1">
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[#00bfa5] uppercase tracking-wider">{item.source_type}</span>
-                            <h4 className="text-sm font-bold text-white mt-2 mb-1">{item.title}</h4>
-                            <p className="text-xs text-slate-400 leading-relaxed font-medium">{item.content}</p>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-[#7c3aed] uppercase tracking-wider">{item.source_type}</span>
+                            <h4 className="text-sm font-bold text-slate-800 mt-2 mb-1">{item.title}</h4>
+                            <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.content}</p>
                           </div>
                           <button 
                             onClick={() => handleDeleteKb(item.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition"
+                            className="p-1.5 text-slate-500 hover:text-red-600 rounded-lg hover:bg-slate-100 transition"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1708,11 +1708,11 @@ const WhatsAppChatbot = () => {
                 </div>
 
                 {/* Add Form */}
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl self-start">
-                  <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><Database size={16} className="text-[#00bfa5]" /> Index FAQ Record</h3>
+                <div className="bg-white border border-slate-200 shadow-sm p-5 rounded-xl self-start">
+                  <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><Database size={16} className="text-[#7c3aed]" /> Index FAQ Record</h3>
                   <form onSubmit={handleAddKb} className="flex flex-col gap-4">
                     <div className="form-group flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Input Format</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Input Format</label>
                       <select 
                         className="w-select" 
                         value={kbSourceType} 
@@ -1724,7 +1724,7 @@ const WhatsAppChatbot = () => {
                     </div>
 
                     <div className="form-group flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Title / Trigger Concept</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Title / Trigger Concept</label>
                       <input 
                         type="text" 
                         className="w-input" 
@@ -1736,7 +1736,7 @@ const WhatsAppChatbot = () => {
                     </div>
 
                     <div className="form-group flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Information Content</label>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase">Information Content</label>
                       <textarea 
                         rows={5} 
                         className="w-textarea" 
@@ -1750,7 +1750,7 @@ const WhatsAppChatbot = () => {
                     <button 
                       type="submit" 
                       disabled={isTraining || !newFaq.content.trim()}
-                      className="w-full py-2.5 bg-[#00bfa5] text-white font-bold rounded-lg text-xs hover:bg-[#00897b] transition flex items-center justify-center gap-1.5"
+                      className="w-full py-2.5 bg-[#7c3aed] text-slate-800 font-bold rounded-lg text-xs hover:bg-[#6d28d9] transition flex items-center justify-center gap-1.5"
                     >
                       {isTraining ? 'Training Model...' : 'Train AI Node'}
                     </button>
@@ -1764,53 +1764,53 @@ const WhatsAppChatbot = () => {
           {activeTab === 'analytics' && (
             <div className="p-6">
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <Database size={22} className="text-[#00bfa5]" /> Chatbot Run Log Analytics
+                <Database size={22} className="text-[#7c3aed]" /> Chatbot Run Log Analytics
               </h2>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-400">Aggregated Automation Performance Statistics</span>
-                  <span className="text-[10px] bg-[#00bfa5]/10 text-[#00bfa5] border border-[#00bfa5]/20 font-bold px-2.5 py-0.5 rounded-full">REALTIME RUNTIME LOGS</span>
+              <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+                <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-500">Aggregated Automation Performance Statistics</span>
+                  <span className="text-[10px] bg-[#7c3aed]/10 text-[#7c3aed] border border-[#7c3aed]/20 font-bold px-2.5 py-0.5 rounded-full">REALTIME RUNTIME LOGS</span>
                 </div>
 
                 <div className="p-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div className="border border-slate-800 p-4 rounded-xl bg-slate-950/40">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Conversations</p>
-                      <h4 className="text-2xl font-black mt-2 text-white">{analytics.totalConversations}</h4>
+                    <div className="border border-slate-200 p-4 rounded-xl bg-white">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Conversations</p>
+                      <h4 className="text-2xl font-black mt-2 text-slate-800">{analytics.totalConversations}</h4>
                     </div>
-                    <div className="border border-slate-800 p-4 rounded-xl bg-slate-950/40">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bot Resolved</p>
-                      <h4 className="text-2xl font-black mt-2 text-[#00bfa5]">{analytics.botResolved}</h4>
+                    <div className="border border-slate-200 p-4 rounded-xl bg-white">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Bot Resolved</p>
+                      <h4 className="text-2xl font-black mt-2 text-[#7c3aed]">{analytics.botResolved}</h4>
                     </div>
-                    <div className="border border-slate-800 p-4 rounded-xl bg-slate-950/40">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">AI Responses</p>
-                      <h4 className="text-2xl font-black mt-2 text-blue-400">{analytics.aiResponses}</h4>
+                    <div className="border border-slate-200 p-4 rounded-xl bg-white">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Responses</p>
+                      <h4 className="text-2xl font-black mt-2 text-blue-600">{analytics.aiResponses}</h4>
                     </div>
-                    <div className="border border-slate-800 p-4 rounded-xl bg-slate-950/40">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Takeover Pauses</p>
-                      <h4 className="text-2xl font-black mt-2 text-orange-400">{analytics.humanEscalated}</h4>
+                    <div className="border border-slate-200 p-4 rounded-xl bg-white">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Takeover Pauses</p>
+                      <h4 className="text-2xl font-black mt-2 text-orange-600">{analytics.humanEscalated}</h4>
                     </div>
                   </div>
 
                   <div className="mt-8">
                     <h3 className="text-sm font-bold mb-4">System Integration Settings</h3>
-                    <div className="border border-slate-800 rounded-lg p-4 bg-slate-950/20 text-xs flex flex-col gap-3 text-slate-300">
-                      <div className="flex justify-between py-1.5 border-b border-slate-800/50">
+                    <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/20 text-xs flex flex-col gap-3 text-slate-600">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span>Automation Framework Status</span>
-                        <span className="font-bold text-green-400">ACTIVE & LISTENERS ATTACHED</span>
+                        <span className="font-bold text-green-600">ACTIVE & LISTENERS ATTACHED</span>
                       </div>
-                      <div className="flex justify-between py-1.5 border-b border-slate-800/50">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span>Meta WhatsApp Cloud API Webhook Listener</span>
-                        <span className="font-semibold text-slate-400">/webhook</span>
+                        <span className="font-semibold text-slate-500">/webhook</span>
                       </div>
-                      <div className="flex justify-between py-1.5 border-b border-slate-800/50">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200/50">
                         <span>Website Public Live Chat Endpoint</span>
-                        <span className="font-semibold text-slate-400">/api/public/send</span>
+                        <span className="font-semibold text-slate-500">/api/public/send</span>
                       </div>
                       <div className="flex justify-between py-1.5">
                         <span>Database Driver</span>
-                        <span className="font-semibold text-slate-400">SQLite3 (Better-SQLite3)</span>
+                        <span className="font-semibold text-slate-500">SQLite3 (Better-SQLite3)</span>
                       </div>
                     </div>
                   </div>
@@ -1823,16 +1823,16 @@ const WhatsAppChatbot = () => {
 
       {/* Modal: New Bot Creation */}
       {showNewBotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl w-full max-w-md p-6 shadow-2xl animate-fade-in text-slate-800">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-base font-bold flex items-center gap-2"><Bot size={20} className="text-[#00bfa5]" /> Create Chatbot Profile</h3>
-              <button onClick={() => setShowNewBotModal(false)} className="p-1 text-slate-400 hover:text-white rounded"><X size={18} /></button>
+              <h3 className="text-base font-bold flex items-center gap-2"><Bot size={20} className="text-[#7c3aed]" /> Create Chatbot Profile</h3>
+              <button onClick={() => setShowNewBotModal(false)} className="p-1 text-slate-500 hover:text-slate-800 rounded"><X size={18} /></button>
             </div>
 
             <form onSubmit={handleCreateBot} className="flex flex-col gap-4">
               <div className="form-group flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Bot Profile Name</label>
+                <label className="text-xs font-semibold text-slate-500">Bot Profile Name</label>
                 <input 
                   type="text" 
                   className="w-input" 
@@ -1847,7 +1847,7 @@ const WhatsAppChatbot = () => {
               <button 
                 type="submit" 
                 disabled={!newBotName.trim()}
-                className="w-full py-3 bg-[#00bfa5] text-white font-bold rounded-lg text-sm hover:bg-[#00897b] transition"
+                className="w-full py-3 bg-[#7c3aed] text-slate-800 font-bold rounded-lg text-sm hover:bg-[#6d28d9] transition"
               >
                 Create Bot Profile
               </button>
