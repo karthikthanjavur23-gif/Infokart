@@ -600,14 +600,49 @@ app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
     console.log(`🚀 Starting background processing for Campaign ${campaignId}`);
     for (const contact of contacts) {
       try {
-        // Simple variable replacement: {{name}}
-        const personalizedMsg = (campaign.template || '').replace(/\{\{name\}\}/g, contact.name || 'Friend');
+        // Determine whether to send as an official Meta Template or free-form text
+        let postData;
+        if (campaign.template) {
+          // Convert template name to Meta-compatible slug (e.g., "Summer Sale Blast" -> "summer_sale_blast")
+          const templateNameSlug = campaign.template.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+          
+          postData = {
+            messaging_product: 'whatsapp',
+            to: contact.phone_number,
+            type: 'template',
+            template: {
+              name: templateNameSlug,
+              language: {
+                code: 'en' // Default language code on Meta
+              },
+              components: [
+                {
+                  type: 'body',
+                  parameters: [
+                    {
+                      type: 'text',
+                      text: contact.name || 'Friend'
+                    }
+                  ]
+                }
+              ]
+            }
+          };
+        } else {
+          const personalizedMsg = 'Hi there!';
+          postData = {
+            messaging_product: 'whatsapp',
+            to: contact.phone_number,
+            type: 'text',
+            text: { body: personalizedMsg }
+          };
+        }
 
         await axios({
           method: 'POST',
           url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
           headers: { 'Authorization': `Bearer ${config.accessToken}`, 'Content-Type': 'application/json' },
-          data: { messaging_product: 'whatsapp', to: contact.phone_number, type: 'text', text: { body: personalizedMsg } },
+          data: postData,
         });
 
         // Update successful status
