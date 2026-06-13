@@ -21,6 +21,7 @@ const Sidebar = () => {
         { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/inbox', label: 'WhatsApp Inbox', icon: Inbox },
         { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
+        { path: '/templates', label: 'Templates', icon: LayoutTemplate },
         { path: '/contacts', label: 'Contacts', icon: Users },
       ]
     },

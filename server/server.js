@@ -1252,15 +1252,49 @@ app.post('/api/templates/sync', authenticateToken, async (req, res) => {
     });
 
     const metaTemplates = response.data.data || [];
-    const updateStmt = db.prepare(`
-      UPDATE whatsapp_templates 
-      SET status = ?, meta_template_id = ?, updated_at = CURRENT_TIMESTAMP 
-      WHERE template_name = ? AND org_id = ?
+    const insertOrReplaceStmt = db.prepare(`
+      INSERT OR REPLACE INTO whatsapp_templates (
+        org_id, meta_template_id, template_name, category, language,
+        header_type, header_content, body_content, footer_content, buttons_json, status, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
 
     db.transaction(() => {
       for (const mt of metaTemplates) {
-        updateStmt.run(mt.status, mt.id, mt.name, req.user.org_id);
+        let headerType = 'NONE';
+        let headerContent = null;
+        let bodyContent = '';
+        let footerContent = null;
+        let buttonsJson = null;
+
+        if (Array.isArray(mt.components)) {
+          for (const comp of mt.components) {
+            if (comp.type === 'HEADER') {
+              headerType = comp.format || 'TEXT';
+              headerContent = comp.text || null;
+            } else if (comp.type === 'BODY') {
+              bodyContent = comp.text || '';
+            } else if (comp.type === 'FOOTER') {
+              footerContent = comp.text || null;
+            } else if (comp.type === 'BUTTONS') {
+              buttonsJson = JSON.stringify(comp.buttons || []);
+            }
+          }
+        }
+
+        insertOrReplaceStmt.run(
+          req.user.org_id,
+          mt.id,
+          mt.name,
+          mt.category,
+          mt.language,
+          headerType,
+          headerContent,
+          bodyContent,
+          footerContent,
+          buttonsJson,
+          mt.status
+        );
       }
     })();
 
