@@ -66,6 +66,16 @@ async function getWhatsAppConfig(orgId) {
     first = db.prepare('SELECT * FROM whatsapp_settings LIMIT 1').get();
   }
   if (first) return { id: first.id, accessToken: first.access_token, phoneNumberId: first.phone_number_id, wabaId: first.waba_id };
+  
+  if (process.env.META_ACCESS_TOKEN && process.env.PHONE_NUMBER_ID) {
+    return {
+      id: 1,
+      nickname: 'System Default WABA',
+      accessToken: process.env.META_ACCESS_TOKEN,
+      phoneNumberId: process.env.PHONE_NUMBER_ID,
+      wabaId: process.env.WABA_ID || null
+    };
+  }
   return null;
 }
 
@@ -1668,12 +1678,15 @@ app.get('/api/audit-logs', authenticateToken, (req, res) => {
 // --- WEBHOOK ENDPOINTS ---
 
 app.get('/webhook', (req, res) => {
+  console.log('[Webhook GET] Incoming query parameters:', req.query);
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
   if (mode === 'subscribe' && token === WEBHOOK_VERIFY_TOKEN) {
+    console.log('[Webhook GET] Verification success! Returning challenge:', challenge);
     res.status(200).send(challenge);
   } else {
+    console.warn('[Webhook GET] Verification failed. Token mismatch or invalid mode.');
     res.sendStatus(403);
   }
 });
