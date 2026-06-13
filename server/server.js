@@ -765,7 +765,6 @@ app.post('/api/contacts/bulk', authenticateToken, (req, res) => {
   res.json({ success: true, count: contacts.length });
 });
 
-
 // 4. Shared Inbox
 app.get('/api/inbox', authenticateToken, (req, res) => {
   const inbox = db.prepare(`
