@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, Megaphone, Bot, Settings, Inbox, 
   Users, LayoutTemplate, MessageCircle, Sparkles, Zap, Shield, ClipboardList,
-  Search, Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, X
+  Search, Bell, LogOut, ChevronDown, ChevronLeft, ChevronRight, X, CreditCard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AccountSwitcher from './AccountSwitcher';
@@ -16,33 +16,26 @@ const Sidebar = () => {
 
   const sections = [
     {
-      title: 'Growth & Engagement',
+      title: 'Workspace',
       items: [
-        { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-        { path: '/marketing-helper', label: 'AI Workspace', icon: Sparkles, badge: 'PRO' },
-        { path: '/campaigns', label: 'Broadcasts', icon: Megaphone },
+        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/inbox', label: 'WhatsApp Inbox', icon: Inbox },
+        { path: '/campaigns', label: 'Campaigns', icon: Megaphone },
+        { path: '/contacts', label: 'Contacts', icon: Users },
       ]
     },
     {
-      title: 'Customer Operations',
+      title: 'AI Platform',
       items: [
-        { path: '/inbox', label: 'Team Inbox', icon: Inbox },
-        { path: '/contacts', label: 'CRM Contacts', icon: Users },
-        { path: '/templates', label: 'Library', icon: LayoutTemplate },
+        { path: '/knowledge-base', label: 'Knowledge Base', icon: ClipboardList },
+        { path: '/ai-agent', label: 'AI Agent', icon: Sparkles, badge: 'ACTIVE' },
       ]
     },
     {
-      title: 'Automation',
+      title: 'Administration',
       items: [
-        { path: '/whatsapp-chatbot', label: 'WhatsApp Bot', icon: MessageCircle },
-        { path: '/ig-chatbot', label: 'Instagram AI', icon: Bot },
-      ]
-    },
-    {
-      title: 'System',
-      items: [
-        { path: '/team', label: 'Infrastructure', icon: Shield },
-        { path: '/audit', label: 'Audit Logs', icon: ClipboardList },
+        { path: '/analytics', label: 'Analytics', icon: Bot },
+        { path: '/billing', label: 'Billing', icon: CreditCard },
         { path: '/settings', label: 'Settings', icon: Settings },
       ]
     }
@@ -62,14 +55,14 @@ const Sidebar = () => {
       <div className="sidebar-header">
         {!isCollapsed ? (
           <div className="brand">
-            <div className="brand-logo">
-              <Zap size={14} color="white" fill="white" />
+            <div className="brand-logo" style={{ backgroundColor: '#7c3aed' }}>
+              <Sparkles size={14} color="white" fill="white" />
             </div>
-            <span>Info</span>kart
+            <span>Spark</span>AI
           </div>
         ) : (
-          <div className="brand-logo" style={{ margin: '0 auto' }}>
-            <Zap size={14} color="white" fill="white" />
+          <div className="brand-logo" style={{ margin: '0 auto', backgroundColor: '#7c3aed' }}>
+            <Sparkles size={14} color="white" fill="white" />
           </div>
         )}
         <button 

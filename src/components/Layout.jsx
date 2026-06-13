@@ -17,13 +17,13 @@ const Layout = () => {
   const [copilotInput, setCopilotInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [copilotMessages, setCopilotMessages] = useState([
-    { role: 'assistant', content: "Hi! I'm your Infokart AI Copilot. I can help you create campaigns, build bots, draft templates, or analyze CRM insights. What's our goal today?" }
+    { role: 'assistant', content: "Hi! I'm your Spark AI Copilot. I can help you create campaigns, configure your WhatsApp AI Employee, train Knowledge Base documents, or view CRM insights. What is our goal today?" }
   ]);
 
   const suggestions = [
     "Create Campaign",
-    "Create Bot",
-    "CRM Insights",
+    "Configure AI Agent",
+    "Train Knowledge Base",
     "Suggest Broadcast",
     "Generate Template",
     "Analyze Contacts"
@@ -32,17 +32,15 @@ const Layout = () => {
   // Dynamic page title mapping based on pathname
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === '/dashboard') return 'Overview';
-    if (path === '/marketing-helper') return 'AI Workspace';
-    if (path === '/campaigns') return 'Campaign Broadcasts';
-    if (path === '/inbox') return 'Team Inbox';
-    if (path === '/contacts') return 'CRM Contacts';
-    if (path === '/templates') return 'Templates Library';
-    if (path === '/whatsapp-chatbot') return 'WhatsApp Bot Builder';
-    if (path === '/ig-chatbot') return 'Instagram AI Agent';
-    if (path === '/team') return 'Team Management';
-    if (path === '/audit') return 'System Audit Logs';
-    if (path === '/settings') return 'Settings & Credentials';
+    if (path === '/dashboard') return 'Dashboard';
+    if (path === '/inbox') return 'WhatsApp Inbox';
+    if (path === '/campaigns') return 'Campaigns';
+    if (path === '/contacts') return 'Contacts';
+    if (path === '/knowledge-base') return 'Knowledge Base';
+    if (path === '/ai-agent') return 'AI Agent';
+    if (path === '/analytics') return 'Analytics';
+    if (path === '/billing') return 'Billing';
+    if (path === '/settings') return 'Settings';
     return 'Dashboard';
   };
 
@@ -63,9 +61,12 @@ const Layout = () => {
       if (cleaned.includes('campaign') || cleaned.includes('broadcast')) {
         response = "I can help you build a new broadcast campaign! Let me redirect you to the step-by-step Campaign Builder wizard.";
         setTimeout(() => navigate('/campaigns/create'), 1500);
-      } else if (cleaned.includes('bot') || cleaned.includes('chatbot') || cleaned.includes('flow')) {
-        response = "Opening the visual WhatsApp Bot Flow Builder canvas. You can visual-map customer triggers and conditions there.";
-        setTimeout(() => navigate('/whatsapp-chatbot'), 1500);
+      } else if (cleaned.includes('bot') || cleaned.includes('chatbot') || cleaned.includes('flow') || cleaned.includes('agent') || cleaned.includes('employee')) {
+        response = "Opening the WhatsApp AI Agent configuration panel. You can define their tone of voice, greeting messages, and instructions there.";
+        setTimeout(() => navigate('/ai-agent'), 1500);
+      } else if (cleaned.includes('knowledge') || cleaned.includes('train') || cleaned.includes('document')) {
+        response = "Redirecting you to the organization's Knowledge Base training module. You can upload URLs, FAQs, and raw guidelines there.";
+        setTimeout(() => navigate('/knowledge-base'), 1500);
       } else if (cleaned.includes('contacts') || cleaned.includes('crm') || cleaned.includes('customer')) {
         response = "Redirecting you to the CRM Contacts dashboard. You can segment contacts, view lifecycle stages, and edit individual drawers.";
         setTimeout(() => navigate('/contacts'), 1500);
@@ -73,7 +74,8 @@ const Layout = () => {
         response = "Heading to the templates manager. I can help you draft and submit official Meta templates for approval.";
         setTimeout(() => navigate('/templates'), 1500);
       } else if (cleaned.includes('insight') || cleaned.includes('analytics')) {
-        response = "Here are your organization insights: Average read rate is 64.2%, delivery is 98.4%, and chatbot resolution is at 80%. Consider launching a WhatsApp re-engagement campaign for VIP customers.";
+        response = "Opening your AI Agent analytics page. Let's analyze resolution rates, message volumes, and handover patterns.";
+        setTimeout(() => navigate('/analytics'), 1500);
       }
 
       setCopilotMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -133,8 +135,8 @@ const Layout = () => {
               <div className="ai-copilot-header-info">
                 <Sparkles size={16} />
                 <div>
-                  <div className="ai-copilot-header-title">Gemini AI Copilot</div>
-                  <div className="ai-copilot-header-subtitle">Enterprise OS Companion</div>
+                  <div className="ai-copilot-header-title">Spark AI Copilot</div>
+                  <div className="ai-copilot-header-subtitle">AI Agent Workspace Companion</div>
                 </div>
               </div>
               <button className="ai-copilot-close" onClick={() => setShowCopilot(false)}>

@@ -2,17 +2,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/Layout';
 import DashboardOverview from './views/DashboardOverview';
 import BulkCampaigns from './views/BulkCampaigns';
-import InstagramChatbot from './views/InstagramChatbot';
 import TeamInbox from './views/TeamInbox';
 import Contacts from './views/Contacts';
 import Templates from './views/Templates';
 import Settings from './views/Settings';
-import WhatsAppChatbot from './views/WhatsAppChatbot';
 import CampaignCreate from './views/CampaignCreate';
 import CampaignDetails from './views/CampaignDetails';
-import MarketingHelper from './views/MarketingHelper';
-import TeamManagement from './views/TeamManagement';
-import SystemAudit from './views/SystemAudit';
+import KnowledgeBase from './views/KnowledgeBase';
+import AiAgent from './views/AiAgent';
+import Analytics from './views/Analytics';
+import Billing from './views/Billing';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './views/Login';
 import LiveChat from './views/LiveChat';
@@ -34,16 +33,15 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardOverview />} />
             <Route path="inbox" element={<TeamInbox />} />
-            <Route path="marketing-helper" element={<MarketingHelper />} />
             <Route path="contacts" element={<Contacts />} />
             <Route path="campaigns" element={<BulkCampaigns />} />
             <Route path="campaigns/create" element={<CampaignCreate />} />
             <Route path="campaigns/:id" element={<CampaignDetails />} />
             <Route path="templates" element={<Templates />} />
-            <Route path="ig-chatbot" element={<InstagramChatbot />} />
-            <Route path="whatsapp-chatbot" element={<WhatsAppChatbot />} />
-            <Route path="team" element={<TeamManagement />} />
-            <Route path="audit" element={<SystemAudit />} />
+            <Route path="knowledge-base" element={<KnowledgeBase />} />
+            <Route path="ai-agent" element={<AiAgent />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="billing" element={<Billing />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

@@ -69,10 +69,10 @@ const DashboardOverview = () => {
   const { user } = useAuth();
   
   const [stats, setStats] = useState([
-    { label: 'Total Contacts', value: '...', icon: Users, color: '#7c3aed', trend: '+12%', points: [12, 14, 15, 18, 20, 22, 25], aiInsight: 'Customer growth is up 8% this week.' },
-    { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: '#10b981', trend: '+0.5%', points: [95, 96, 95.8, 97, 98.1, 98.4, 98.4], aiInsight: 'Excellent health status across WABA lines.' },
-    { label: 'Chatbot Activity', value: '...', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, 240], aiInsight: 'AI handled 82% of responses automatically.' },
-    { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [58, 60, 59, 61, 62.4, 63.8, 64.2], aiInsight: 'Highest open rate observed on VIP group.' },
+    { label: 'Total Contacts', value: '...', icon: Users, color: '#7c3aed', trend: '+12%', points: [12, 14, 15, 18, 20, 22, 25], aiInsight: 'Customer growth is up 12% this week.' },
+    { label: 'AI Agent Replies', value: '...', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, 240], aiInsight: 'AI handled the majority of replies automatically.' },
+    { label: 'AI Resolution Rate', value: '...', icon: Shield, color: '#10b981', trend: '+4.2%', points: [76, 78, 79, 81, 80, 82, 85], aiInsight: 'AI resolved inquiries without human handover.' },
+    { label: 'Active Campaigns', value: '...', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [1, 2, 1, 2, 3, 2, 3], aiInsight: 'Active broadcast campaigns targeting leads.' },
   ]);
   const [recentMessages, setRecentMessages] = useState([]);
   const [activeCampaigns, setActiveCampaigns] = useState([]);
@@ -88,24 +88,34 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/dashboard`, { headers: getAuthHeaders() });
+        const headers = getAuthHeaders();
+        const res = await fetch(`${API_BASE_URL}/api/dashboard`, { headers });
         const data = await res.json();
+        
+        let analytics = { resolutionRate: 80 };
+        try {
+          const aRes = await fetch(`${API_BASE_URL}/api/ai-agent/analytics`, { headers });
+          if (aRes.ok) analytics = await aRes.json();
+        } catch (e) {
+          console.error("Failed to load analytics for dashboard:", e);
+        }
+
         if (data && !data.error) {
           setStats([
             { label: 'Total Contacts', value: data.totalContacts || '0', icon: Users, color: '#7c3aed', trend: '+12%', points: [12, 14, 15, 18, 20, 22, data.totalContacts || 25], aiInsight: 'Customer database increased by 12%.' },
-            { label: 'Delivery Rate', value: '98.4%', icon: CheckCircle2, color: '#10b981', trend: '+0.5%', points: [95, 96, 95.8, 97, 98.1, 98.4, 98.4], aiInsight: 'Excellent health status across WABA lines.' },
-            { label: 'Chatbot Activity', value: data.botResponses || '0', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, data.botResponses || 240], aiInsight: 'AI handled 82% of replies automatically.' },
-            { label: 'Avg. Open Rate', value: '64.2%', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [58, 60, 59, 61, 62.4, 63.8, 64.2], aiInsight: 'Highest open rate observed on VIP group.' },
+            { label: 'AI Agent Replies', value: data.botResponses || '0', icon: MessageSquare, color: '#7c3aed', trend: '+24%', points: [100, 120, 150, 130, 180, 210, data.botResponses || 240], aiInsight: 'AI handled responses automatically.' },
+            { label: 'AI Resolution Rate', value: `${analytics.resolutionRate || 80}%`, icon: Shield, color: '#10b981', trend: '+4.2%', points: [76, 78, 79, 81, 80, 82, analytics.resolutionRate || 80], aiInsight: 'Percentage of chats resolved by AI.' },
+            { label: 'Active Campaigns', value: data.activeCampaigns || '0', icon: TrendingUp, color: '#f59e0b', trend: '+8%', points: [1, 2, 1, 2, 3, 2, data.activeCampaigns || 3], aiInsight: 'Ongoing broadcast schedules.' },
           ]);
         }
 
-        const msgRes = await fetch(`${API_BASE_URL}/api/messages/recent`, { headers: getAuthHeaders() });
+        const msgRes = await fetch(`${API_BASE_URL}/api/messages/recent`, { headers });
         const msgData = await msgRes.json();
         if (Array.isArray(msgData)) {
           setRecentMessages(msgData.slice(0, 5));
         }
 
-        const campRes = await fetch(`${API_BASE_URL}/api/campaigns`, { headers: getAuthHeaders() });
+        const campRes = await fetch(`${API_BASE_URL}/api/campaigns`, { headers });
         const campData = await campRes.json();
         if (Array.isArray(campData)) {
           setActiveCampaigns(campData.slice(0, 3));

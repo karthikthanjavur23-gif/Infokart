@@ -291,6 +291,32 @@ const initDb = () => {
     console.log("Added current_node_id column to conversations table.");
   } catch (e) { /* Already exists */ }
 
+  // AI Agent upgrades for Spark AI
+  try {
+    db.exec("ALTER TABLE bots ADD COLUMN spark_api_key TEXT;");
+    console.log("Added spark_api_key column to bots table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE bots ADD COLUMN spark_agent_id TEXT;");
+    console.log("Added spark_agent_id column to bots table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE bots ADD COLUMN system_prompt TEXT;");
+    console.log("Added system_prompt column to bots table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE bots ADD COLUMN greeting_message TEXT;");
+    console.log("Added greeting_message column to bots table.");
+  } catch (e) { /* Already exists */ }
+
+  try {
+    db.exec("ALTER TABLE bots ADD COLUMN model_name TEXT DEFAULT 'gemini-1.5-flash';");
+    console.log("Added model_name column to bots table.");
+  } catch (e) { /* Already exists */ }
+
   console.log("Database initialized successfully!");
 };
 
@@ -409,35 +435,9 @@ const seedDb = () => {
     insertKB.run(1, 'faq', 'Meta API Connection Setup', 'To connect WhatsApp, click on Marketing Workspace, select Embedded Signup, and authorize your Meta Business Account. Sandboxed accounts can send free templates to up to 10 verified numbers.');
     insertKB.run(1, 'url', 'https://infokart.in/support', 'For customer support, email support@infokart.in or message us on WhatsApp at +15551234567. Normal response time is under 1 hour.');
 
-    // Seed Visual WhatsApp Bot profile
-    db.prepare("INSERT OR IGNORE INTO bots (id, org_id, bot_name, status, ai_mode, ai_tone) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(1, 1, 'Main InfoKart Bot', 'ACTIVE', 'BALANCED', 'FRIENDLY');
-
-    // Seed Visual WhatsApp Bot Flow
-    const initialFlow = {
-      nodes: [
-        { id: 'start', type: 'Start', label: 'Start Bot Trigger', x: 100, y: 150 },
-        { id: 'welcome', type: 'Message', label: 'Welcome Message', content: 'Hello 👋! Welcome to InfoKart. How can we help you today?', x: 280, y: 150 },
-        { id: 'options', type: 'Buttons', label: 'Service Selection', content: 'Please select one of the options below:', buttons: ['Sales', 'Support', 'Pricing', 'Talk to Agent'], x: 480, y: 150 },
-        { id: 'sales_flow', type: 'Message', label: 'Sales Route', content: 'Our sales team is ready! Email sales@infokart.in or drop your requirements here.', x: 700, y: 50 },
-        { id: 'pricing_flow', type: 'Message', label: 'Pricing Info', content: 'InfoKart plans are: Starter ($10/mo), Growth ($29/mo), and Enterprise ($99/mo).', x: 700, y: 180 },
-        { id: 'support_handover', type: 'Assign Agent', label: 'Handover to Human', content: 'Escalating conversation to support agent...', x: 700, y: 310 }
-      ],
-      connections: [
-        { from: 'start', to: 'welcome' },
-        { from: 'welcome', to: 'options' },
-        { from: 'options', to: 'sales_flow', condition: 'Sales' },
-        { from: 'options', to: 'pricing_flow', condition: 'Pricing' },
-        { from: 'options', to: 'support_handover', condition: 'Talk to Agent' }
-      ]
-    };
-    db.prepare("INSERT OR IGNORE INTO bot_flows (bot_id, flow_json) VALUES (?, ?)")
-      .run(1, JSON.stringify(initialFlow));
-
-    // Seed Bot Knowledge Base FAQ / Docs
-    const insertBotKB = db.prepare("INSERT OR IGNORE INTO bot_knowledge_base (id, bot_id, source_type, title, content) VALUES (?, ?, ?, ?, ?)");
-    insertBotKB.run(1, 1, 'FAQ', 'Refund Policy', 'We offer a full 14-day money-back guarantee if you are not satisfied with Infokart.');
-    insertBotKB.run(2, 1, 'FAQ', 'Business Hours', 'InfoKart support is available Mon-Fri, 9 AM to 6 PM.');
+    // Seed WhatsApp AI Agent profile (Repurposed as Spark AI Agent)
+    db.prepare("INSERT OR IGNORE INTO bots (id, org_id, bot_name, status, ai_mode, ai_tone, system_prompt, greeting_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .run(1, 1, 'Sparky', 'ACTIVE', 'BALANCED', 'FRIENDLY', 'You are Sparky, a premium AI Agent employee. Answer customer queries friendly and professionally using the knowledge base.', 'Hello! How can I assist your business today?');
   }
 };
 
@@ -445,3 +445,4 @@ initDb();
 seedDb();
 
 module.exports = db;
+
