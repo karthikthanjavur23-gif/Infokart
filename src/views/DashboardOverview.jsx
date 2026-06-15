@@ -4,7 +4,7 @@ import { API_BASE_URL, getAuthHeaders } from '../api/config';
 import { useAuth } from '../context/AuthContext';
 import { 
   Users, CheckCircle2, MessageSquare, TrendingUp, ArrowUpRight, 
-  ArrowDownRight, Sparkles, Send, Layout, Shield, ExternalLink, Calendar, MessageCircle
+  ArrowDownRight, Sparkles, Send, Layout, Shield, ExternalLink, Calendar, MessageCircle, Zap
 } from 'lucide-react';
 
 const AreaChart = () => {
