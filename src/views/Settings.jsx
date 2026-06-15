@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Globe, User, Bell, Shield, Smartphone, ExternalLink, 
-  Check, RefreshCw, AlertTriangle, Play, HelpCircle, 
+import {
+  Globe, User, Bell, Shield, Smartphone, ExternalLink,
+  Check, RefreshCw, AlertTriangle, Play, HelpCircle,
   Settings as SettingsIcon, MessageSquare, Zap, Activity, Info
 } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../api/config';
@@ -62,7 +62,7 @@ const Settings = () => {
       return alert("Meta Developer credentials are not configured on the server. Please verify your .env file.");
     }
     const redirectUri = window.location.origin + "/settings";
-    
+
     // Meta Embedded Onboarding Configuration Options
     const extras = encodeURIComponent(JSON.stringify({
       version: "v4",
@@ -71,7 +71,7 @@ const Settings = () => {
     }));
 
     const signupUrl = `https://www.facebook.com/v22.0/dialog/oauth?client_id=${metaConfig.appId}&config_id=${metaConfig.configId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=whatsapp_business_management,whatsapp_business_messaging&extras=${extras}`;
-    
+
     window.location.href = signupUrl;
   };
 
@@ -145,10 +145,10 @@ const Settings = () => {
   const triggerSync = async (type) => {
     setActionLoading(true);
     try {
-      const url = type === 'templates' 
+      const url = type === 'templates'
         ? `${API_BASE_URL}/api/templates/sync`
         : `${API_BASE_URL}/api/contacts/sync`;
-      
+
       const res = await fetch(url, {
         method: 'POST',
         headers: getAuthHeaders()
@@ -236,15 +236,15 @@ const Settings = () => {
               {tab.label}
             </button>
           ))}
-          
+
           <div style={{ marginTop: '32px', padding: '20px', borderRadius: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
             <h4 style={{ fontSize: '13px', fontWeight: '800', marginBottom: '6px' }}>Onboarding Guide</h4>
             <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.5', marginBottom: '12px' }}>
               Connect WhatsApp to sync templates, create interactive message campaigns, and automate replies.
             </p>
-            <a 
-              href="https://developers.facebook.com/docs/whatsapp/cloud-api" 
-              target="_blank" 
+            <a
+              href="https://developers.facebook.com/docs/whatsapp/cloud-api"
+              target="_blank"
               rel="noreferrer"
               style={{ color: '#7c3aed', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
             >
@@ -254,10 +254,10 @@ const Settings = () => {
         </div>
 
         {/* Right Content */}
-        <div style={{ 
-          backgroundColor: '#ffffff', 
-          border: '1px solid #e2e8f0', 
-          borderRadius: '16px', 
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '16px',
           padding: '32px',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
         }}>
@@ -287,14 +287,14 @@ const Settings = () => {
                     backgroundColor: '#faf5ff',
                     marginBottom: '32px'
                   }}>
-                    <div style={{ 
-                      width: '64px', 
-                      height: '64px', 
-                      borderRadius: '20px', 
-                      backgroundColor: '#7c3aed', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
+                    <div style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '20px',
+                      backgroundColor: '#7c3aed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       color: '#ffffff',
                       margin: '0 auto 24px auto',
                       boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)'
@@ -305,7 +305,7 @@ const Settings = () => {
                     <p style={{ color: '#6b7280', fontSize: '13px', maxWidth: '400px', margin: '0 auto 24px auto', lineHeight: '1.5' }}>
                       Connect your WhatsApp Business number in under 2 minutes. Meta Embedded Signup handles everything.
                     </p>
-                    <button 
+                    <button
                       onClick={handleLaunchSignup}
                       style={{
                         backgroundColor: '#7c3aed',
@@ -353,13 +353,13 @@ const Settings = () => {
                 /* CONNECTED - TABS VIEW */
                 <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                   {/* Status Banner */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'space-between', 
-                    backgroundColor: '#faf5ff', 
-                    border: '1px solid #f3e8ff', 
-                    padding: '20px 24px', 
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor: '#faf5ff',
+                    border: '1px solid #f3e8ff',
+                    padding: '20px 24px',
                     borderRadius: '12px',
                     marginBottom: '32px'
                   }}>
@@ -518,9 +518,9 @@ const Settings = () => {
                                 fontSize: '11px',
                                 fontWeight: '800',
                                 color: '#ffffff',
-                                backgroundColor: 
+                                backgroundColor:
                                   wsStatus.details?.qualityRating?.toUpperCase() === 'GREEN' ? '#10b981' :
-                                  wsStatus.details?.qualityRating?.toUpperCase() === 'YELLOW' ? '#f59e0b' : '#ef4444'
+                                    wsStatus.details?.qualityRating?.toUpperCase() === 'YELLOW' ? '#f59e0b' : '#ef4444'
                               }}>
                                 {wsStatus.details?.qualityRating || 'GREEN'}
                               </span>
@@ -536,7 +536,7 @@ const Settings = () => {
                                 {wsStatus.details?.messagingLimit || 'TIER_1K'}
                               </span>
                               <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                                ({wsStatus.details?.messagingLimit === 'TIER_250' ? '250 limit' : 
+                                ({wsStatus.details?.messagingLimit === 'TIER_250' ? '250 limit' :
                                   wsStatus.details?.messagingLimit === 'TIER_10K' ? '10K limit' : '1000 limit'}/day)
                               </span>
                             </div>

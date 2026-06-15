@@ -34,8 +34,8 @@ const WEBHOOK_VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Initialize Gemini
-const genAI = GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key_here' 
-  ? new GoogleGenerativeAI(GEMINI_API_KEY) 
+const genAI = GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key_here'
+  ? new GoogleGenerativeAI(GEMINI_API_KEY)
   : null;
 
 const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
@@ -71,7 +71,7 @@ async function getWhatsAppConfig(orgId) {
     } else {
       legacyConfig = db.prepare('SELECT * FROM whatsapp_settings WHERE is_active = 1').get();
     }
-  } catch (err) {}
+  } catch (err) { }
 
   if (legacyConfig && legacyConfig.access_token && legacyConfig.phone_number_id) {
     return {
@@ -91,7 +91,7 @@ async function getWhatsAppConfig(orgId) {
     } else {
       first = db.prepare('SELECT * FROM whatsapp_accounts LIMIT 1').get();
     }
-  } catch (err) {}
+  } catch (err) { }
 
   if (first) {
     return {
@@ -111,7 +111,7 @@ async function getWhatsAppConfig(orgId) {
     } else {
       firstLegacy = db.prepare('SELECT * FROM whatsapp_settings LIMIT 1').get();
     }
-  } catch (err) {}
+  } catch (err) { }
 
   if (firstLegacy) {
     return {
@@ -122,7 +122,7 @@ async function getWhatsAppConfig(orgId) {
       wabaId: firstLegacy.waba_id
     };
   }
-  
+
   if (process.env.META_ACCESS_TOKEN && process.env.PHONE_NUMBER_ID) {
     return {
       id: 1,
@@ -177,9 +177,9 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ error: "Invalid credentials" });
   }
   const token = jwt.sign({ id: user.id, org_id: user.org_id, name: user.name, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
-  
+
   logAction(user.id, user.org_id, 'LOGIN', { email: user.email });
-  
+
   res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
 });
 
@@ -201,7 +201,7 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
     // 2. Ensure admin user exists and has the correct password
     const adminUser = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@infokart.in');
     const hashedPassword = bcrypt.hashSync('admin123', 10);
-    
+
     if (adminUser) {
       db.prepare('UPDATE users SET password = ? WHERE email = ?').run(hashedPassword, 'admin@infokart.in');
       console.log('Force reset existing admin password to admin123.');
@@ -224,13 +224,13 @@ app.get('/api/whatsapp/accounts', authenticateToken, (req, res) => {
       verified_name: a.display_name,
       is_active: a.is_active
     }));
-    
+
     // Add legacy fallback if empty
     if (formatted.length === 0) {
       const legacy = db.prepare('SELECT id, nickname, display_phone_number, verified_name, is_active FROM whatsapp_settings WHERE org_id = ?').all(req.user.org_id);
       return res.json(legacy);
     }
-    
+
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -270,7 +270,7 @@ app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
         }
       });
     }
-    
+
     // Legacy fallback
     const legacy = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(req.user.org_id);
     if (legacy) {
@@ -289,7 +289,7 @@ app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
         }
       });
     }
-    
+
     res.json({ connected: false, details: null });
   } catch (error) {
     console.error("Fetch status error:", error.message);
@@ -347,10 +347,10 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
   const appSecret = process.env.META_APP_SECRET;
 
   if (!code || !appId || !appSecret) {
-    console.error('[ERROR] Missing critical credentials:', { 
-      hasCode: !!code, 
-      hasAppId: !!appId, 
-      hasAppSecret: !!appSecret 
+    console.error('[ERROR] Missing critical credentials:', {
+      hasCode: !!code,
+      hasAppId: !!appId,
+      hasAppSecret: !!appSecret
     });
     return res.status(400).json({ error: 'Missing code, appId, or appSecret' });
   }
@@ -631,7 +631,7 @@ app.post('/api/whatsapp/verify-phone', authenticateToken, async (req, res) => {
 
 app.post('/api/whatsapp/manual-config', authenticateToken, async (req, res) => {
   const { accessToken, phoneNumberId, wabaId, verifiedName, nickname } = req.body;
-  
+
   if (!accessToken || !phoneNumberId || !wabaId) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -666,17 +666,17 @@ app.post('/api/whatsapp/manual-config', authenticateToken, async (req, res) => {
     `);
 
     stmt.run(
-      req.user.org_id, 
-      wabaId, 
-      phoneNumberId, 
-      accessToken, 
-      'Manual Config', 
+      req.user.org_id,
+      wabaId,
+      phoneNumberId,
+      accessToken,
+      'Manual Config',
       verifiedName || 'Manual Account',
       nickname || 'Main Line'
     );
-    
+
     logAction(req.user.id, req.user.org_id, 'CONNECT_WHATSAPP', { method: 'MANUAL' });
-    
+
     res.json({ success: true });
   } catch (error) {
     console.error("Manual Config Error:", error);
@@ -724,22 +724,22 @@ app.get('/api/campaigns/:id/contacts', authenticateToken, (req, res) => {
 
 app.post('/api/campaigns', authenticateToken, (req, res) => {
   const { name, channel, target, template, contactIds, settings, scheduledAt } = req.body;
-  
+
   // If we have selected contacts, the target count is the length of that selection
   const finalTarget = (contactIds && Array.isArray(contactIds)) ? contactIds.length : (target || 0);
-  
+
   const stmt = db.prepare('INSERT INTO campaigns (name, channel, status, target, template, settings, scheduled_at, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   const info = stmt.run(
-    name, 
-    channel, 
-    'Draft', 
-    finalTarget, 
-    template || '', 
+    name,
+    channel,
+    'Draft',
+    finalTarget,
+    template || '',
     settings ? JSON.stringify(settings) : null,
     scheduledAt || null,
     req.user.org_id
   );
-  
+
   const campaignId = info.lastInsertRowid;
 
   // If specific contacts were selected, record them in campaign_contacts table
@@ -795,7 +795,7 @@ app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
         if (campaign.template) {
           // Convert template name to Meta-compatible slug (e.g., "Summer Sale Blast" -> "summer_sale_blast")
           const templateNameSlug = campaign.template.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
-          
+
           postData = {
             messaging_product: 'whatsapp',
             to: contact.phone_number,
@@ -838,7 +838,7 @@ app.post('/api/campaigns/:id/send', authenticateToken, async (req, res) => {
         // Update successful status
         db.prepare('UPDATE campaign_contacts SET status = \'Sent\' WHERE campaign_id = ? AND contact_id = ?')
           .run(campaignId, contact.id);
-        
+
         db.prepare('UPDATE campaigns SET sent = sent + 1 WHERE id = ?').run(campaignId);
 
         // Optional: Small delay to prevent rate issues
@@ -974,7 +974,7 @@ app.get('/api/messages/:phone_number', authenticateToken, (req, res) => {
 app.post('/api/messages/reply', async (req, res) => {
   const { to, message } = req.body;
   const config = await getWhatsAppConfig();
-  
+
   // Log outbound agent message to DB
   db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
     .run(to, 'agent', 'outbound', message);
@@ -1003,9 +1003,9 @@ app.post('/api/messages/reply', async (req, res) => {
 app.post('/api/send-message', async (req, res) => {
   const { to, message } = req.body;
   if (!to || !message) return res.status(400).json({ error: "Missing to or message" });
-  
+
   const config = await getWhatsAppConfig();
-  
+
   // Log outbound to DB
   db.prepare('INSERT INTO messages (phone_number, sender, direction, content) VALUES (?, ?, ?, ?)')
     .run(to, 'agent', 'outbound', message);
@@ -1074,14 +1074,14 @@ app.post('/api/ai/generate', async (req, res) => {
 
 app.post('/api/ai/suggest-reply', async (req, res) => {
   const { phone_number } = req.body;
-  
+
   // Get last 10 messages for context
   const history = db.prepare('SELECT sender, content FROM messages WHERE phone_number = ? ORDER BY created_at DESC LIMIT 10').all(phone_number);
   const context = history.reverse().map(m => `${m.sender === 'user' ? 'Customer' : 'Agent'}: ${m.content}`).join('\n');
-  
+
   const prompt = `Based on the following conversation history, suggest a professional and helpful reply to the customer's last message:\n\n${context}\n\nSuggested Reply:`;
   const response = await askAI(prompt, "You are a customer support agent for InfoKart. Keep replies helpful, concise, and friendly.");
-  
+
   res.json({ response });
 });
 
@@ -1091,9 +1091,9 @@ app.post('/api/ai/plan-campaign', async (req, res) => {
   Provide a Campaign Name, a Message Template, and a target audience description.
   Format your response as a JSON object with keys: "name", "template", "audience". 
   Only return the JSON object.`;
-  
+
   let response = await askAI(prompt, "You are a marketing strategist. Return ONLY a valid JSON object.");
-  
+
   // Clean up JSON if AI adds markdown blocks
   try {
     const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -1149,7 +1149,7 @@ app.get('/api/templates/:id', authenticateToken, (req, res) => {
   try {
     const template = db.prepare('SELECT * FROM whatsapp_templates WHERE id = ? AND org_id = ?').get(req.params.id, req.user.org_id);
     if (!template) return res.status(404).json({ error: "Template not found" });
-    
+
     // Add backward compatibility fields
     res.json({
       ...template,
@@ -1641,7 +1641,7 @@ app.post('/api/inbox/send', authenticateToken, async (req, res) => {
       INSERT INTO messages (org_id, phone_number, sender, direction, content, status, conversation_id, sender_type, media_url)
       VALUES (?, ?, 'agent', 'outbound', ?, 'sent', ?, 'agent', ?)
     `).run(orgId, contact.phone_number, finalContent || '', conversation_id, media_url || null);
-    
+
     const messageId = result.lastInsertRowid;
     db.prepare('UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(conversation_id);
 
@@ -1726,7 +1726,7 @@ app.post('/api/inbox/assign', authenticateToken, (req, res) => {
   try {
     db.prepare('UPDATE conversations SET assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND org_id = ?')
       .run(assigned_to || null, conversation_id, req.user.org_id);
-    
+
     let logText = "Conversation unassigned.";
     if (assigned_to) {
       const user = db.prepare('SELECT name FROM users WHERE id = ?').get(assigned_to);
@@ -1745,7 +1745,7 @@ app.post('/api/inbox/note', authenticateToken, (req, res) => {
   try {
     db.prepare('INSERT INTO notes (conversation_id, agent_id, note) VALUES (?, ?, ?)')
       .run(conversation_id, req.user.id, note);
-    
+
     const logText = `@${req.user.name}: ${note}`;
     db.prepare('INSERT INTO messages (org_id, phone_number, sender, direction, content, sender_type, conversation_id) VALUES (?, ?, \'agent\', \'outbound\', ?, \'internal_note\', ?)')
       .run(req.user.org_id, 'internal_note', logText, conversation_id);
@@ -1789,9 +1789,9 @@ app.post('/api/inbox/active-status', authenticateToken, (req, res) => {
         typing_status = excluded.typing_status,
         last_active = CURRENT_TIMESTAMP
     `).run(req.user.org_id, conversation_id, req.user.id, req.user.name, typing_status ? 1 : 0);
-    
+
     db.prepare("DELETE FROM active_agents WHERE last_active < datetime('now', '-10 seconds')").run();
-    
+
     const others = db.prepare('SELECT user_id, username, typing_status FROM active_agents WHERE org_id = ? AND conversation_id = ? AND user_id != ?')
       .all(req.user.org_id, conversation_id, req.user.id);
     res.json({ success: true, active_agents: others });
@@ -1811,7 +1811,7 @@ app.post('/api/inbox/ai-auto-suggest', authenticateToken, async (req, res) => {
 
     const historyText = history.reverse().map(h => `${h.sender === 'user' ? 'Customer' : 'Agent'}: ${h.content}`).join('\n');
     const articles = db.prepare('SELECT title, content FROM inbox_knowledge_base WHERE org_id = ?').all(req.user.org_id);
-    
+
     let kbContext = "";
     if (articles.length > 0) {
       kbContext = "\nRelevant Knowledge Base Training:\n" + articles.map(a => `[${a.title}]: ${a.content}`).join('\n');
@@ -1912,14 +1912,14 @@ app.post('/webhook', async (req, res) => {
     if (body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
       const phoneNumber = body.entry[0].changes[0].value.messages[0].from;
       const msgBody = body.entry[0].changes[0].value.messages[0].text?.body;
-      
+
       console.log(`[Webhook] Incoming from ${phoneNumber}: ${msgBody}`);
 
       // Ensure contact exists and retrieve details
       db.prepare('INSERT OR IGNORE INTO contacts (phone_number, name, org_id) VALUES (?, ?, 1)')
         .run(phoneNumber, 'Unknown User');
       const contact = db.prepare('SELECT id FROM contacts WHERE phone_number = ? AND org_id = 1').get(phoneNumber);
-      
+
       // Ensure conversation exists for WhatsApp channel
       let conv = db.prepare("SELECT id FROM conversations WHERE org_id = 1 AND customer_id = ? AND channel = 'WhatsApp'").get(contact.id);
       if (!conv) {
@@ -1939,21 +1939,21 @@ app.post('/webhook', async (req, res) => {
       } else {
         // Fallback to old auto-reply logic
         const autoReplyEnabled = db.prepare("SELECT value FROM bot_configs WHERE platform='whatsapp' AND key='autoReplyEnabled'").get()?.value;
-        
+
         if (autoReplyEnabled === 'true') {
           const config = await getWhatsAppConfig();
           const replyMsg = `Hi! Thanks for your message ("${msgBody}"). I am the automated assistant. We will be right with you.`;
-          
+
           db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, org_id) VALUES (?, \'bot\', \'outbound\', ?, ?, \'bot\', 1)')
             .run(phoneNumber, replyMsg, conv.id);
 
           if (config && config.phoneNumberId && config.accessToken) {
-             await axios({
-               method: 'POST',
-               url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
-               headers: { 'Authorization': `Bearer ${config.accessToken}` },
-               data: { messaging_product: 'whatsapp', to: phoneNumber, type: 'text', text: { body: replyMsg } },
-             }).catch(e => console.error(e));
+            await axios({
+              method: 'POST',
+              url: `https://graph.facebook.com/v22.0/${config.phoneNumberId}/messages`,
+              headers: { 'Authorization': `Bearer ${config.accessToken}` },
+              data: { messaging_product: 'whatsapp', to: phoneNumber, type: 'text', text: { body: replyMsg } },
+            }).catch(e => console.error(e));
           }
         }
       }
@@ -2011,7 +2011,7 @@ async function triggerAiAgent(orgId, conversationId, userMessageText) {
     // 2. Local fallback loop if external API is unconfigured/fails
     if (!aiResponse) {
       console.log("[AI Agent] External Spark AI unconfigured or failed. Falling back to local Gemini execution.");
-      
+
       // Get conversation history context
       const history = db.prepare('SELECT sender, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 6').all(conversationId);
       const historyText = history.reverse().map(h => `${h.sender === 'user' ? 'Customer' : 'Agent'}: ${h.content}`).join('\n');
@@ -2121,7 +2121,7 @@ app.post('/api/ai-agent/update', authenticateToken, (req, res) => {
       spark_agent_id || null,
       orgId
     );
-    
+
     // Read and return the updated agent configurations
     const updated = db.prepare("SELECT * FROM bots WHERE org_id = ?").get(orgId);
     res.json({ success: true, agent: updated });
@@ -2281,17 +2281,17 @@ setInterval(async () => {
         const res = await axios.get(`https://graph.facebook.com/v22.0/${acc.phone_number_id}?fields=quality_rating,messaging_limit_tier,status`, {
           headers: { 'Authorization': `Bearer ${acc.access_token}` }
         });
-        
+
         const qualityRating = res.data.quality_rating || 'GREEN';
         const messagingLimit = res.data.messaging_limit_tier || 'TIER_1K';
         const phoneStatus = res.data.status || 'Connected';
-        
+
         db.prepare(`
           UPDATE whatsapp_accounts 
           SET quality_rating = ?, messaging_limit = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
           WHERE id = ?
         `).run(qualityRating, messagingLimit, phoneStatus, acc.id);
-        
+
         console.log(`✅ Health check success for number ${acc.phone_number}: status=${phoneStatus}, quality=${qualityRating}`);
       } catch (err) {
         console.error(`❌ Health check failed for account ID ${acc.id} (${acc.phone_number}):`, err.response?.data || err.message);
@@ -2310,6 +2310,21 @@ setInterval(async () => {
   }
 }, 15 * 60 * 1000);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 API Server running on http://localhost:${PORT}`);
-});
+if (db.onReady) {
+  db.onReady.then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 API Server running on http://localhost:${PORT}`);
+    });
+  }).catch(err => {
+    console.error("❌ Failed to complete database startup sync:", err.message);
+    // Fallback: listen anyway
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 API Server running on http://localhost:${PORT} (without Firestore sync)`);
+    });
+  });
+} else {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 API Server running on http://localhost:${PORT}`);
+  });
+}
+

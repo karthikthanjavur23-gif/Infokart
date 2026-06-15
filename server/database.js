@@ -1,6 +1,7 @@
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const path = require('path');
+const admin = require('firebase-admin');
 
 const dbPath = process.env.PERSISTENT_DB_PATH || path.resolve(__dirname, 'infokart.db');
 
@@ -10,12 +11,49 @@ if (!fs.existsSync(parentDir)) {
   fs.mkdirSync(parentDir, { recursive: true });
 }
 
-const db = new Database(dbPath);
+const rawDb = new Database(dbPath);
+
+// Initialize Firebase (if configured)
+let firestore = null;
+const firebaseProjectId = process.env.FIREBASE_PROJECT_ID;
+const firebaseClientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+const serviceKeyPath = path.resolve(__dirname, 'serviceAccountKey.json');
+
+if (firebaseProjectId && firebaseClientEmail && firebasePrivateKey) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: firebaseProjectId,
+        clientEmail: firebaseClientEmail,
+        privateKey: firebasePrivateKey.replace(/\\n/g, '\n')
+      })
+    });
+    firestore = admin.firestore();
+    console.log("🔥 Connected to Firebase Firestore via Env Variables!");
+  } catch (e) {
+    console.error("Failed to initialize Firebase via env:", e.message);
+  }
+} else if (fs.existsSync(serviceKeyPath)) {
+  try {
+    const serviceAccount = require(serviceKeyPath);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    firestore = admin.firestore();
+    console.log("🔥 Connected to Firebase Firestore via serviceAccountKey.json!");
+  } catch (e) {
+    console.error("Failed to initialize Firebase via serviceAccountKey.json:", e.message);
+  }
+} else {
+  console.log("⚠️ Firebase not configured. Running in local SQLite mode only.");
+}
 
 // Initialize database tables
 const initDb = () => {
   // 0. Base tables: Organizations, Users, Audit Logs (essential for multi-tenancy)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS organizations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -23,7 +61,7 @@ const initDb = () => {
     )
   `);
 
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -35,7 +73,7 @@ const initDb = () => {
     )
   `);
 
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -48,7 +86,7 @@ const initDb = () => {
   `);
 
   // 1. Contacts (CRM)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS contacts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER DEFAULT 1,
@@ -62,7 +100,7 @@ const initDb = () => {
   `);
 
   // 2. Messages (Shared Team Inbox / Logs)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER DEFAULT 1,
@@ -76,7 +114,7 @@ const initDb = () => {
   `);
 
   // 3. Campaigns (Broadcast engine)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS campaigns (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER DEFAULT 1,
@@ -95,7 +133,7 @@ const initDb = () => {
   `);
 
   // 3.1 Campaign Contacts (Join Table for specific targeting)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS campaign_contacts (
       campaign_id INTEGER,
       contact_id INTEGER,
@@ -107,7 +145,7 @@ const initDb = () => {
   `);
 
   // 4. Bot Configurations (Flows)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS bot_configs (
       platform TEXT NOT NULL, -- 'whatsapp' or 'instagram'
       key TEXT NOT NULL,
@@ -118,7 +156,7 @@ const initDb = () => {
   `);
 
   // 5. Message Templates
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -129,7 +167,7 @@ const initDb = () => {
   `);
 
   // 6. WhatsApp Settings (Embedded Signup Data)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS whatsapp_settings (
       id INTEGER PRIMARY KEY CHECK (id = 1), -- Ensure only one primary setting for now
       waba_id TEXT,
@@ -147,7 +185,7 @@ const initDb = () => {
   `);
 
   // 6.5 WhatsApp Accounts (frictionless signup)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS whatsapp_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -168,7 +206,7 @@ const initDb = () => {
   `);
 
   // 7. WhatsApp Rich Templates
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS whatsapp_templates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -190,7 +228,7 @@ const initDb = () => {
   `);
 
   // 8. Inbox Conversations
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -209,7 +247,7 @@ const initDb = () => {
   `);
 
   // 9. Conversations Internal Notes
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       conversation_id INTEGER NOT NULL,
@@ -222,7 +260,7 @@ const initDb = () => {
   `);
 
   // 10. AI Knowledge Base Data
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS inbox_knowledge_base (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -234,7 +272,7 @@ const initDb = () => {
   `);
 
   // 11. Active Agents Presence (Collision Detection)
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS active_agents (
       org_id INTEGER NOT NULL,
       conversation_id INTEGER NOT NULL,
@@ -247,7 +285,7 @@ const initDb = () => {
   `);
 
   // 12. Bot Profiles
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS bots (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       org_id INTEGER NOT NULL,
@@ -261,7 +299,7 @@ const initDb = () => {
   `);
 
   // 13. Bot Flows
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS bot_flows (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       bot_id INTEGER UNIQUE NOT NULL,
@@ -271,7 +309,7 @@ const initDb = () => {
   `);
 
   // 14. Bot Documents / FAQ Knowledge Base
-  db.exec(`
+  rawDb.exec(`
     CREATE TABLE IF NOT EXISTS bot_knowledge_base (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       bot_id INTEGER NOT NULL,
@@ -286,55 +324,55 @@ const initDb = () => {
 
   // Upgrades: Add new fields to existing messages table dynamically
   try {
-    db.exec("ALTER TABLE messages ADD COLUMN conversation_id INTEGER;");
+    rawDb.exec("ALTER TABLE messages ADD COLUMN conversation_id INTEGER;");
     console.log("Added conversation_id column to messages table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE messages ADD COLUMN sender_type TEXT DEFAULT 'user';");
+    rawDb.exec("ALTER TABLE messages ADD COLUMN sender_type TEXT DEFAULT 'user';");
     console.log("Added sender_type column to messages table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE messages ADD COLUMN media_url TEXT;");
+    rawDb.exec("ALTER TABLE messages ADD COLUMN media_url TEXT;");
     console.log("Added media_url column to messages table.");
   } catch (e) { /* Already exists */ }
 
   // Upgrade conversations table dynamically to add bot_paused
   try {
-    db.exec("ALTER TABLE conversations ADD COLUMN bot_paused INTEGER DEFAULT 0;");
+    rawDb.exec("ALTER TABLE conversations ADD COLUMN bot_paused INTEGER DEFAULT 0;");
     console.log("Added bot_paused column to conversations table.");
   } catch (e) { /* Already exists */ }
 
   // Upgrade conversations table dynamically to add current_node_id
   try {
-    db.exec("ALTER TABLE conversations ADD COLUMN current_node_id TEXT;");
+    rawDb.exec("ALTER TABLE conversations ADD COLUMN current_node_id TEXT;");
     console.log("Added current_node_id column to conversations table.");
   } catch (e) { /* Already exists */ }
 
   // AI Agent upgrades for Spark AI
   try {
-    db.exec("ALTER TABLE bots ADD COLUMN spark_api_key TEXT;");
+    rawDb.exec("ALTER TABLE bots ADD COLUMN spark_api_key TEXT;");
     console.log("Added spark_api_key column to bots table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE bots ADD COLUMN spark_agent_id TEXT;");
+    rawDb.exec("ALTER TABLE bots ADD COLUMN spark_agent_id TEXT;");
     console.log("Added spark_agent_id column to bots table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE bots ADD COLUMN system_prompt TEXT;");
+    rawDb.exec("ALTER TABLE bots ADD COLUMN system_prompt TEXT;");
     console.log("Added system_prompt column to bots table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE bots ADD COLUMN greeting_message TEXT;");
+    rawDb.exec("ALTER TABLE bots ADD COLUMN greeting_message TEXT;");
     console.log("Added greeting_message column to bots table.");
   } catch (e) { /* Already exists */ }
 
   try {
-    db.exec("ALTER TABLE bots ADD COLUMN model_name TEXT DEFAULT 'gemini-1.5-flash';");
+    rawDb.exec("ALTER TABLE bots ADD COLUMN model_name TEXT DEFAULT 'gemini-1.5-flash';");
     console.log("Added model_name column to bots table.");
   } catch (e) { /* Already exists */ }
 
@@ -343,42 +381,42 @@ const initDb = () => {
 
 // Seed initial data if empty
 const seedDb = () => {
-  const count = db.prepare('SELECT count(*) as count FROM campaigns').get();
+  const count = rawDb.prepare('SELECT count(*) as count FROM campaigns').get();
   if (count.count === 0) {
     console.log("Seeding initial data...");
     
     // Ensure Org exists
-    db.prepare('INSERT OR IGNORE INTO organizations (id, name) VALUES (?, ?)').run(1, 'Infokart Demo');
+    rawDb.prepare('INSERT OR IGNORE INTO organizations (id, name) VALUES (?, ?)').run(1, 'Infokart Demo');
 
     // Seed Bot Configs
-    const insertConfig = db.prepare('INSERT INTO bot_configs (platform, key, value, org_id) VALUES (?, ?, ?, ?)');
+    const insertConfig = rawDb.prepare('INSERT INTO bot_configs (platform, key, value, org_id) VALUES (?, ?, ?, ?)');
     insertConfig.run('whatsapp', 'autoReplyEnabled', 'true', 1);
     insertConfig.run('whatsapp', 'greetingEnabled', 'true', 1);
     insertConfig.run('instagram', 'autoReplyEnabled', 'true', 1);
     insertConfig.run('instagram', 'storyMentionsEnabled', 'true', 1);
 
     // Seed Campaigns
-    const insertCampaign = db.prepare('INSERT INTO campaigns (name, channel, status, sent, opened, clicks, target, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertCampaign = rawDb.prepare('INSERT INTO campaigns (name, channel, status, sent, opened, clicks, target, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     insertCampaign.run('Summer Sale 2026', 'WhatsApp', 'Active', 1200, 950, 420, 5000, 1);
     insertCampaign.run('New Feature Alert', 'WhatsApp', 'Draft', 0, 0, 0, 2000, 1);
     insertCampaign.run('Re-engagement Q1', 'WhatsApp', 'Completed', 5000, 4100, 1205, 5000, 1);
     
     // Seed Contacts
-    const insertContact = db.prepare('INSERT INTO contacts (id, name, phone_number, tags, email, notes, org_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const insertContact = rawDb.prepare('INSERT INTO contacts (id, name, phone_number, tags, email, notes, org_id) VALUES (?, ?, ?, ?, ?, ?, ?)');
     insertContact.run(1, 'Alice Johnson', '15551234567', 'Lead,VIP', 'alice@example.com', 'Interested in premium plan.', 1);
     insertContact.run(2, 'Bob Smith', '15559876543', 'Customer,Interested', 'bob@example.com', 'Needs pricing clarification.', 1);
     insertContact.run(3, 'Charlie Brown', '15555550100', 'Lead,Cold Lead', 'charlie@example.com', 'Story reply lead.', 1);
     insertContact.run(4, 'David Miller', 'website_visitor_123', 'Website visitor', 'david@example.com', 'Visited website from ad.', 1);
     
     // Seed Conversations
-    const insertConv = db.prepare('INSERT INTO conversations (id, org_id, customer_id, channel, status, assigned_to, priority, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertConv = rawDb.prepare('INSERT INTO conversations (id, org_id, customer_id, channel, status, assigned_to, priority, sentiment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     insertConv.run(1, 1, 1, 'WhatsApp', 'open', null, 'high', 'positive'); // WhatsApp Alice unassigned
     insertConv.run(2, 1, 2, 'WhatsApp', 'open', 1, 'medium', 'neutral'); // WhatsApp Bob assigned to agent 1
     insertConv.run(3, 1, 3, 'Instagram', 'open', null, 'low', 'neutral'); // Instagram Charlie unassigned
     insertConv.run(4, 1, 4, 'Website', 'open', null, 'high', 'positive'); // Website Live Chat David
     
     // Seed Messages (linked to conversations)
-    const insertMessage = db.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, status, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    const insertMessage = rawDb.prepare('INSERT INTO messages (phone_number, sender, direction, content, conversation_id, sender_type, status, org_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     
     // Alice thread (WhatsApp)
     insertMessage.run('15551234567', 'user', 'inbound', 'Hi, I have a question about the Summer Sale.', 1, 'user', 'read', 1);
@@ -398,13 +436,13 @@ const seedDb = () => {
     insertMessage.run('website_visitor_123', 'bot', 'outbound', 'Hi! I am the Infokart bot. An agent will takeover shortly if you require further assistance.', 4, 'bot', 'read', 1);
 
     // Seed Templates
-    const insertTemplate = db.prepare('INSERT INTO templates (name, content, category) VALUES (?, ?, ?)');
+    const insertTemplate = rawDb.prepare('INSERT INTO templates (name, content, category) VALUES (?, ?, ?)');
     insertTemplate.run('Summer Sale Blast', 'Hey {{name}}! ☀️ Our Summer Splash Sale is LIVE! Get up to 50% off on all premium items.', 'Marketing');
     insertTemplate.run('Welcome Message', 'Hi {{name}}, welcome to InfoKart! We are excited to have you on board. 👋', 'Utility');
     insertTemplate.run('Feedback Request', 'Hello! We hope you enjoyed our service. Would you mind sharing your feedback? ⭐', 'Marketing');
 
     // Seed Rich WhatsApp Templates
-    const insertWppTemplate = db.prepare(`
+    const insertWppTemplate = rawDb.prepare(`
       INSERT INTO whatsapp_templates (org_id, template_name, category, language, header_type, header_content, body_content, footer_content, buttons_json, status)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
@@ -451,13 +489,13 @@ const seedDb = () => {
     );
 
     // Seed Inbox Knowledge Base Training content
-    const insertKB = db.prepare('INSERT INTO inbox_knowledge_base (org_id, source_type, title, content) VALUES (?, ?, ?, ?)');
+    const insertKB = rawDb.prepare('INSERT INTO inbox_knowledge_base (org_id, source_type, title, content) VALUES (?, ?, ?, ?)');
     insertKB.run(1, 'faq', 'Infokart Pricing Model', 'Infokart features three plans: Starter ($10/mo, 1 channel, 2 team members), Growth ($29/mo, 3 channels, 5 team members), and Enterprise ($99/mo, unlimited channels, unlimited team members, dedicated support).');
     insertKB.run(1, 'faq', 'Meta API Connection Setup', 'To connect WhatsApp, click on Marketing Workspace, select Embedded Signup, and authorize your Meta Business Account. Sandboxed accounts can send free templates to up to 10 verified numbers.');
     insertKB.run(1, 'url', 'https://infokart.in/support', 'For customer support, email support@infokart.in or message us on WhatsApp at +15551234567. Normal response time is under 1 hour.');
 
     // Seed WhatsApp AI Agent profile (Repurposed as Spark AI Agent)
-    db.prepare("INSERT OR IGNORE INTO bots (id, org_id, bot_name, status, ai_mode, ai_tone, system_prompt, greeting_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    rawDb.prepare("INSERT OR IGNORE INTO bots (id, org_id, bot_name, status, ai_mode, ai_tone, system_prompt, greeting_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
       .run(1, 1, 'Sparky', 'ACTIVE', 'BALANCED', 'FRIENDLY', 'You are Sparky, a premium AI Agent employee. Answer customer queries friendly and professionally using the knowledge base.', 'Hello! How can I assist your business today?');
   }
 };
@@ -465,5 +503,191 @@ const seedDb = () => {
 initDb();
 seedDb();
 
-module.exports = db;
+// --- Firestore Sync Adapter ---
 
+// Helper to extract table name from SQL query
+function getTableName(sql) {
+  const insertMatch = sql.match(/insert\s+(?:or\s+ignore\s+|or\s+replace\s+)?into\s+(\w+)/i);
+  if (insertMatch) return insertMatch[1];
+  const updateMatch = sql.match(/update\s+(\w+)/i);
+  if (updateMatch) return updateMatch[1];
+  const deleteMatch = sql.match(/delete\s+from\s+(\w+)/i);
+  if (deleteMatch) return deleteMatch[1];
+  return null;
+}
+
+// Get appropriate Doc ID for Firestore
+function getDocId(tableName, row) {
+  if (row.id) return row.id.toString();
+  if (tableName === 'contacts' && row.phone_number) return row.phone_number.toString();
+  if (tableName === 'bot_configs' && row.platform && row.key) return `${row.platform}_${row.key}`;
+  if (tableName === 'campaign_contacts' && row.campaign_id && row.contact_id) return `${row.campaign_id}_${row.contact_id}`;
+  return (row.id || row.phone_number || Math.random().toString(36).substring(2)).toString();
+}
+
+// Write operation sync wrapper
+function syncAfterWrite(sql, args, result, affectedRowsForDelete) {
+  if (!firestore) return;
+  const tableName = getTableName(sql);
+  if (!tableName) return;
+
+  // Execute async
+  setTimeout(async () => {
+    try {
+      if (sql.trim().toLowerCase().startsWith('insert')) {
+        const row = rawDb.prepare(`SELECT * FROM ${tableName} WHERE rowid = ?`).get(result.lastInsertRowid);
+        if (row) {
+          const docId = getDocId(tableName, row);
+          await firestore.collection(tableName).doc(docId).set(row);
+          console.log(`🔥 [Firestore] Synced INSERT -> ${tableName}/${docId}`);
+        }
+      } else if (sql.trim().toLowerCase().startsWith('update')) {
+        let rows = [];
+        if (sql.includes('WHERE id = ?')) {
+          const id = args[args.length - 1];
+          const row = rawDb.prepare(`SELECT * FROM ${tableName} WHERE id = ?`).get(id);
+          if (row) rows = [row];
+        } else if (sql.includes('WHERE phone_number = ?')) {
+          const phone = args[args.length - 1];
+          const row = rawDb.prepare(`SELECT * FROM ${tableName} WHERE phone_number = ?`).get(phone);
+          if (row) rows = [row];
+        } else {
+          // Fallback: sync all records for small configuration tables
+          const smallTables = ['whatsapp_accounts', 'whatsapp_settings', 'bots', 'bot_configs', 'templates', 'bot_flows', 'bot_knowledge_base', 'inbox_knowledge_base'];
+          if (smallTables.includes(tableName)) {
+            const allRows = rawDb.prepare(`SELECT * FROM ${tableName}`).all();
+            for (const r of allRows) {
+              const docId = getDocId(tableName, r);
+              await firestore.collection(tableName).doc(docId).set(r);
+            }
+            console.log(`🔥 [Firestore] Bulk synced UPDATE for small table -> ${tableName}`);
+            return;
+          }
+        }
+
+        for (const row of rows) {
+          const docId = getDocId(tableName, row);
+          await firestore.collection(tableName).doc(docId).set(row);
+          console.log(`🔥 [Firestore] Synced UPDATE -> ${tableName}/${docId}`);
+        }
+      } else if (sql.trim().toLowerCase().startsWith('delete')) {
+        if (affectedRowsForDelete && affectedRowsForDelete.length > 0) {
+          for (const row of affectedRowsForDelete) {
+            const docId = getDocId(tableName, row);
+            await firestore.collection(tableName).doc(docId).delete();
+            console.log(`🔥 [Firestore] Synced DELETE -> ${tableName}/${docId}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`❌ [Firestore Sync Error] Failed to sync ${tableName}:`, err.message);
+    }
+  }, 10);
+}
+
+// Initial Sync from Firestore to SQLite
+async function syncFromFirebaseToSqlite() {
+  if (!firestore) return;
+  console.log("🔄 Syncing data from Firebase Firestore to local SQLite cache...");
+  const collections = [
+    'organizations', 'users', 'contacts', 'messages', 'campaigns', 
+    'campaign_contacts', 'bot_configs', 'bots', 'bot_flows', 
+    'bot_knowledge_base', 'templates', 'whatsapp_settings', 
+    'whatsapp_accounts', 'whatsapp_templates', 'conversations', 
+    'notes', 'inbox_knowledge_base', 'active_agents', 'audit_logs'
+  ];
+
+  for (const collectionName of collections) {
+    try {
+      const snapshot = await firestore.collection(collectionName).get();
+      if (snapshot.empty) continue;
+      
+      console.log(`📥 Syncing ${snapshot.size} documents from Firestore collection: ${collectionName}`);
+      
+      // Disable foreign keys temporarily for batch insert
+      rawDb.exec("PRAGMA foreign_keys = OFF;");
+      
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const columns = Object.keys(data);
+        if (columns.length === 0) continue;
+        
+        const placeholders = columns.map(() => '?').join(', ');
+        const columnNames = columns.join(', ');
+        
+        // Remove existing record to avoid conflict before inserting
+        if (data.id) {
+          rawDb.prepare(`DELETE FROM ${collectionName} WHERE id = ?`).run(data.id);
+        } else if (collectionName === 'contacts' && data.phone_number) {
+          rawDb.prepare(`DELETE FROM ${collectionName} WHERE phone_number = ?`).run(data.phone_number);
+        } else if (collectionName === 'bot_configs' && data.platform && data.key) {
+          rawDb.prepare(`DELETE FROM ${collectionName} WHERE platform = ? AND key = ?`).run(data.platform, data.key);
+        }
+        
+        const sql = `INSERT OR REPLACE INTO ${collectionName} (${columnNames}) VALUES (${placeholders})`;
+        const values = columns.map(col => {
+          if (typeof data[col] === 'object' && data[col] !== null) {
+            return JSON.stringify(data[col]);
+          }
+          return data[col];
+        });
+        
+        try {
+          rawDb.prepare(sql).run(...values);
+        } catch (err) {
+          console.error(`Error inserting synced doc into ${collectionName}:`, err.message);
+        }
+      }
+      
+      rawDb.exec("PRAGMA foreign_keys = ON;");
+    } catch (e) {
+      console.error(`Failed to sync collection ${collectionName} from Firebase:`, e.message);
+    }
+  }
+  console.log("✅ Firestore sync completed!");
+}
+
+// Wrap db exports
+const db = {
+  prepare(sql) {
+    const stmt = rawDb.prepare(sql);
+    const tableName = getTableName(sql);
+
+    return {
+      get(...args) {
+        return stmt.get(...args);
+      },
+      all(...args) {
+        return stmt.all(...args);
+      },
+      run(...args) {
+        let affectedRowsForDelete = [];
+        if (tableName && sql.trim().toLowerCase().startsWith('delete')) {
+          try {
+            const selectSql = sql.replace(/delete\s+from/i, 'SELECT * FROM');
+            affectedRowsForDelete = rawDb.prepare(selectSql).all(...args);
+          } catch (e) {
+            // ignore
+          }
+        }
+
+        const result = stmt.run(...args);
+        syncAfterWrite(sql, args, result, affectedRowsForDelete);
+        return result;
+      }
+    };
+  },
+
+  exec(sql) {
+    return rawDb.exec(sql);
+  },
+
+  transaction(fn) {
+    return rawDb.transaction(fn);
+  },
+
+  // Expose onReady Promise to allow waiting for initial sync
+  onReady: firestore ? syncFromFirebaseToSqlite() : Promise.resolve()
+};
+
+module.exports = db;
