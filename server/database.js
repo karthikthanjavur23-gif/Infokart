@@ -14,10 +14,11 @@ if (!fs.existsSync(parentDir)) {
 const rawDb = new Database(dbPath);
 
 // Initialize Firebase (if configured)
-let firestore = null;
+let rtdb = null;
 const firebaseProjectId = process.env.FIREBASE_PROJECT_ID;
 const firebaseClientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+const firebaseDatabaseUrl = process.env.FIREBASE_DATABASE_URL || 'https://infowaves-waba-default-rtdb.firebaseio.com/';
 
 const serviceKeyPath = path.resolve(__dirname, 'serviceAccountKey.json');
 
@@ -28,10 +29,11 @@ if (firebaseProjectId && firebaseClientEmail && firebasePrivateKey) {
         projectId: firebaseProjectId,
         clientEmail: firebaseClientEmail,
         privateKey: firebasePrivateKey.replace(/\\n/g, '\n')
-      })
+      }),
+      databaseURL: firebaseDatabaseUrl
     });
-    firestore = admin.firestore();
-    console.log("🔥 Connected to Firebase Firestore via Env Variables!");
+    rtdb = admin.database();
+    console.log(`🔥 Connected to Firebase Realtime Database at ${firebaseDatabaseUrl} via Env Variables!`);
   } catch (e) {
     console.error("Failed to initialize Firebase via env:", e.message);
   }
@@ -39,10 +41,11 @@ if (firebaseProjectId && firebaseClientEmail && firebasePrivateKey) {
   try {
     const serviceAccount = require(serviceKeyPath);
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: firebaseDatabaseUrl
     });
-    firestore = admin.firestore();
-    console.log("🔥 Connected to Firebase Firestore via serviceAccountKey.json!");
+    rtdb = admin.database();
+    console.log(`🔥 Connected to Firebase Realtime Database at ${firebaseDatabaseUrl} via serviceAccountKey.json!`);
   } catch (e) {
     console.error("Failed to initialize Firebase via serviceAccountKey.json:", e.message);
   }
@@ -503,7 +506,7 @@ const seedDb = () => {
 initDb();
 seedDb();
 
-// --- Firestore Sync Adapter ---
+// --- Firebase Realtime Database Sync Adapter ---
 
 // Helper to extract table name from SQL query
 function getTableName(sql) {
@@ -516,7 +519,7 @@ function getTableName(sql) {
   return null;
 }
 
-// Get appropriate Doc ID for Firestore
+// Get appropriate Doc ID for Firebase path
 function getDocId(tableName, row) {
   if (row.id) return row.id.toString();
   if (tableName === 'contacts' && row.phone_number) return row.phone_number.toString();
@@ -527,7 +530,7 @@ function getDocId(tableName, row) {
 
 // Write operation sync wrapper
 function syncAfterWrite(sql, args, result, affectedRowsForDelete) {
-  if (!firestore) return;
+  if (!rtdb) return;
   const tableName = getTableName(sql);
   if (!tableName) return;
 
@@ -538,8 +541,8 @@ function syncAfterWrite(sql, args, result, affectedRowsForDelete) {
         const row = rawDb.prepare(`SELECT * FROM ${tableName} WHERE rowid = ?`).get(result.lastInsertRowid);
         if (row) {
           const docId = getDocId(tableName, row);
-          await firestore.collection(tableName).doc(docId).set(row);
-          console.log(`🔥 [Firestore] Synced INSERT -> ${tableName}/${docId}`);
+          await rtdb.ref(`${tableName}/${docId}`).set(row);
+          console.log(`🔥 [Firebase RTDB] Synced INSERT -> ${tableName}/${docId}`);
         }
       } else if (sql.trim().toLowerCase().startsWith('update')) {
         let rows = [];
@@ -558,38 +561,38 @@ function syncAfterWrite(sql, args, result, affectedRowsForDelete) {
             const allRows = rawDb.prepare(`SELECT * FROM ${tableName}`).all();
             for (const r of allRows) {
               const docId = getDocId(tableName, r);
-              await firestore.collection(tableName).doc(docId).set(r);
+              await rtdb.ref(`${tableName}/${docId}`).set(r);
             }
-            console.log(`🔥 [Firestore] Bulk synced UPDATE for small table -> ${tableName}`);
+            console.log(`🔥 [Firebase RTDB] Bulk synced UPDATE for small table -> ${tableName}`);
             return;
           }
         }
 
         for (const row of rows) {
           const docId = getDocId(tableName, row);
-          await firestore.collection(tableName).doc(docId).set(row);
-          console.log(`🔥 [Firestore] Synced UPDATE -> ${tableName}/${docId}`);
+          await rtdb.ref(`${tableName}/${docId}`).set(row);
+          console.log(`🔥 [Firebase RTDB] Synced UPDATE -> ${tableName}/${docId}`);
         }
       } else if (sql.trim().toLowerCase().startsWith('delete')) {
         if (affectedRowsForDelete && affectedRowsForDelete.length > 0) {
           for (const row of affectedRowsForDelete) {
             const docId = getDocId(tableName, row);
-            await firestore.collection(tableName).doc(docId).delete();
-            console.log(`🔥 [Firestore] Synced DELETE -> ${tableName}/${docId}`);
+            await rtdb.ref(`${tableName}/${docId}`).remove();
+            console.log(`🔥 [Firebase RTDB] Synced DELETE -> ${tableName}/${docId}`);
           }
         }
       }
     } catch (err) {
-      console.error(`❌ [Firestore Sync Error] Failed to sync ${tableName}:`, err.message);
+      console.error(`❌ [Firebase RTDB Sync Error] Failed to sync ${tableName}:`, err.message);
     }
   }, 10);
 }
 
-// Initial Sync from Firestore to SQLite
+// Initial Sync from Firebase RTDB to SQLite
 async function syncFromFirebaseToSqlite() {
-  if (!firestore) return;
-  console.log("🔄 Syncing data from Firebase Firestore to local SQLite cache...");
-  const collections = [
+  if (!rtdb) return;
+  console.log("🔄 Syncing data from Firebase Realtime Database to local SQLite cache...");
+  const tables = [
     'organizations', 'users', 'contacts', 'messages', 'campaigns', 
     'campaign_contacts', 'bot_configs', 'bots', 'bot_flows', 
     'bot_knowledge_base', 'templates', 'whatsapp_settings', 
@@ -597,54 +600,58 @@ async function syncFromFirebaseToSqlite() {
     'notes', 'inbox_knowledge_base', 'active_agents', 'audit_logs'
   ];
 
-  for (const collectionName of collections) {
+  for (const tableName of tables) {
     try {
-      const snapshot = await firestore.collection(collectionName).get();
-      if (snapshot.empty) continue;
+      const snapshot = await rtdb.ref(tableName).once('value');
+      const data = snapshot.val();
+      if (!data) continue;
       
-      console.log(`📥 Syncing ${snapshot.size} documents from Firestore collection: ${collectionName}`);
+      const documents = typeof data === 'object' ? Object.values(data) : [];
+      if (documents.length === 0) continue;
       
-      // Disable foreign keys temporarily for batch insert
+      console.log(`📥 Syncing ${documents.length} records from RTDB table: ${tableName}`);
+      
       rawDb.exec("PRAGMA foreign_keys = OFF;");
       
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const columns = Object.keys(data);
+      for (const row of documents) {
+        if (!row || typeof row !== 'object') continue;
+        
+        const columns = Object.keys(row);
         if (columns.length === 0) continue;
         
         const placeholders = columns.map(() => '?').join(', ');
         const columnNames = columns.join(', ');
         
-        // Remove existing record to avoid conflict before inserting
-        if (data.id) {
-          rawDb.prepare(`DELETE FROM ${collectionName} WHERE id = ?`).run(data.id);
-        } else if (collectionName === 'contacts' && data.phone_number) {
-          rawDb.prepare(`DELETE FROM ${collectionName} WHERE phone_number = ?`).run(data.phone_number);
-        } else if (collectionName === 'bot_configs' && data.platform && data.key) {
-          rawDb.prepare(`DELETE FROM ${collectionName} WHERE platform = ? AND key = ?`).run(data.platform, data.key);
+        // Remove existing record to avoid conflict
+        if (row.id) {
+          rawDb.prepare(`DELETE FROM ${tableName} WHERE id = ?`).run(row.id);
+        } else if (tableName === 'contacts' && row.phone_number) {
+          rawDb.prepare(`DELETE FROM ${tableName} WHERE phone_number = ?`).run(row.phone_number);
+        } else if (tableName === 'bot_configs' && row.platform && row.key) {
+          rawDb.prepare(`DELETE FROM ${tableName} WHERE platform = ? AND key = ?`).run(row.platform, row.key);
         }
         
-        const sql = `INSERT OR REPLACE INTO ${collectionName} (${columnNames}) VALUES (${placeholders})`;
+        const sql = `INSERT OR REPLACE INTO ${tableName} (${columnNames}) VALUES (${placeholders})`;
         const values = columns.map(col => {
-          if (typeof data[col] === 'object' && data[col] !== null) {
-            return JSON.stringify(data[col]);
+          if (typeof row[col] === 'object' && row[col] !== null) {
+            return JSON.stringify(row[col]);
           }
-          return data[col];
+          return row[col];
         });
         
         try {
           rawDb.prepare(sql).run(...values);
         } catch (err) {
-          console.error(`Error inserting synced doc into ${collectionName}:`, err.message);
+          console.error(`Error inserting synced row into ${tableName}:`, err.message);
         }
       }
       
       rawDb.exec("PRAGMA foreign_keys = ON;");
     } catch (e) {
-      console.error(`Failed to sync collection ${collectionName} from Firebase:`, e.message);
+      console.error(`Failed to sync table ${tableName} from Firebase RTDB:`, e.message);
     }
   }
-  console.log("✅ Firestore sync completed!");
+  console.log("✅ Firebase Realtime Database sync completed!");
 }
 
 // Wrap db exports
@@ -687,7 +694,7 @@ const db = {
   },
 
   // Expose onReady Promise to allow waiting for initial sync
-  onReady: firestore ? syncFromFirebaseToSqlite() : Promise.resolve()
+  onReady: rtdb ? syncFromFirebaseToSqlite() : Promise.resolve()
 };
 
 module.exports = db;
