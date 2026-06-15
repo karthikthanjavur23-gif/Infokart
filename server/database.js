@@ -146,6 +146,27 @@ const initDb = () => {
     )
   `);
 
+  // 6.5 WhatsApp Accounts (frictionless signup)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      org_id INTEGER DEFAULT 1,
+      business_id TEXT,
+      waba_id TEXT,
+      phone_number_id TEXT,
+      phone_number TEXT,
+      display_name TEXT,
+      access_token TEXT,
+      quality_rating TEXT,
+      messaging_limit TEXT,
+      status TEXT DEFAULT 'Connected',
+      is_active INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // 7. WhatsApp Rich Templates
   db.exec(`
     CREATE TABLE IF NOT EXISTS whatsapp_templates (

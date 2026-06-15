@@ -77,6 +77,8 @@ const DashboardOverview = () => {
   const [recentMessages, setRecentMessages] = useState([]);
   const [activeCampaigns, setActiveCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [wabaStatus, setWabaStatus] = useState({ connected: false, details: null });
+  const [wabaLoading, setWabaLoading] = useState(true);
 
   const greeting = () => {
     const hr = new Date().getHours();
@@ -120,10 +122,15 @@ const DashboardOverview = () => {
         if (Array.isArray(campData)) {
           setActiveCampaigns(campData.slice(0, 3));
         }
+
+        const wabaRes = await fetch(`${API_BASE_URL}/api/whatsapp/status`, { headers });
+        const wabaData = await wabaRes.json();
+        setWabaStatus(wabaData);
       } catch (e) {
         console.error("Dashboard overview query failed:", e);
       } finally {
         setLoading(false);
+        setWabaLoading(false);
       }
     };
 
@@ -163,6 +170,117 @@ const DashboardOverview = () => {
           </div>
         </div>
       </div>
+
+      {/* WhatsApp Onboarding Banner */}
+      {!wabaLoading && (
+        wabaStatus.connected ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '20px 24px',
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '20px',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+            marginTop: '-8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                backgroundColor: '#7c3aed15',
+                color: '#7c3aed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <MessageCircle size={20} />
+              </div>
+              <div>
+                <div style={{ fontWeight: '800', fontSize: '14px', color: '#1f2937' }}>
+                  WhatsApp Connected: {wabaStatus.details?.phoneNumber || 'Active Number'}
+                </div>
+                <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                  <span>Quality: <strong style={{ color: '#10b981' }}>{wabaStatus.details?.qualityRating || 'GREEN'}</strong></span>
+                  <span>Limit: <strong>{wabaStatus.details?.messagingLimit || 'TIER_1K'}</strong></span>
+                  <span>Status: <strong style={{ color: '#10b981' }}>{wabaStatus.details?.status || 'Connected'}</strong></span>
+                </div>
+              </div>
+            </div>
+            <button 
+              onClick={() => navigate('/settings')}
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #d1d5db',
+                color: '#374151',
+                borderRadius: '8px',
+                padding: '8px 16px',
+                fontSize: '11px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              Manage Connection
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '24px 32px',
+            backgroundColor: '#faf5ff',
+            border: '1px solid #f3e8ff',
+            borderRadius: '20px',
+            marginTop: '-8px',
+            boxShadow: '0 1px 3px 0 rgba(124, 58, 237, 0.05)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 16px -3px rgba(124, 58, 237, 0.3)'
+              }}>
+                <Zap size={22} fill="white" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: '950', color: '#111827', margin: 0 }}>Connect your WhatsApp Business Account</h3>
+                <p style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', maxWidth: '500px', lineHeight: '1.5' }}>
+                  Start broadcasting campaigns and automate replies in under 2 minutes. Meta Embedded Signup handles the entire setup.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => navigate('/settings')}
+              style={{
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 8px 16px -3px rgba(124, 58, 237, 0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              Connect WhatsApp
+            </button>
+          </div>
+        )
+      )}
 
       {/* KPI Stats Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

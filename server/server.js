@@ -43,29 +43,85 @@ const aiModel = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) 
 // Helper to get Active WhatsApp Config (Authenticated)
 async function getWhatsAppConfig(orgId) {
   let config;
-  if (orgId) {
-    config = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(orgId);
-  } else {
-    config = db.prepare('SELECT * FROM whatsapp_settings WHERE is_active = 1').get();
+  try {
+    if (orgId) {
+      config = db.prepare('SELECT * FROM whatsapp_accounts WHERE org_id = ? AND is_active = 1').get(orgId);
+    } else {
+      config = db.prepare('SELECT * FROM whatsapp_accounts WHERE is_active = 1').get();
+    }
+  } catch (err) {
+    console.error("Failed to query whatsapp_accounts:", err.message);
   }
 
   if (config && config.access_token && config.phone_number_id) {
     return {
       id: config.id,
-      nickname: config.nickname,
+      nickname: config.display_name,
       accessToken: config.access_token,
       phoneNumberId: config.phone_number_id,
       wabaId: config.waba_id
     };
   }
-  // Fallback to first available if none active
-  let first;
-  if (orgId) {
-    first = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ?').get(orgId);
-  } else {
-    first = db.prepare('SELECT * FROM whatsapp_settings LIMIT 1').get();
+
+  // Fallback to legacy whatsapp_settings table
+  let legacyConfig;
+  try {
+    if (orgId) {
+      legacyConfig = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(orgId);
+    } else {
+      legacyConfig = db.prepare('SELECT * FROM whatsapp_settings WHERE is_active = 1').get();
+    }
+  } catch (err) {}
+
+  if (legacyConfig && legacyConfig.access_token && legacyConfig.phone_number_id) {
+    return {
+      id: legacyConfig.id,
+      nickname: legacyConfig.nickname || legacyConfig.verified_name,
+      accessToken: legacyConfig.access_token,
+      phoneNumberId: legacyConfig.phone_number_id,
+      wabaId: legacyConfig.waba_id
+    };
   }
-  if (first) return { id: first.id, accessToken: first.access_token, phoneNumberId: first.phone_number_id, wabaId: first.waba_id };
+
+  // Fallback to first available whatsapp_accounts
+  let first;
+  try {
+    if (orgId) {
+      first = db.prepare('SELECT * FROM whatsapp_accounts WHERE org_id = ?').get(orgId);
+    } else {
+      first = db.prepare('SELECT * FROM whatsapp_accounts LIMIT 1').get();
+    }
+  } catch (err) {}
+
+  if (first) {
+    return {
+      id: first.id,
+      nickname: first.display_name,
+      accessToken: first.access_token,
+      phoneNumberId: first.phone_number_id,
+      wabaId: first.waba_id
+    };
+  }
+
+  // Fallback to first available legacy settings
+  let firstLegacy;
+  try {
+    if (orgId) {
+      firstLegacy = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ?').get(orgId);
+    } else {
+      firstLegacy = db.prepare('SELECT * FROM whatsapp_settings LIMIT 1').get();
+    }
+  } catch (err) {}
+
+  if (firstLegacy) {
+    return {
+      id: firstLegacy.id,
+      nickname: firstLegacy.nickname || firstLegacy.verified_name,
+      accessToken: firstLegacy.access_token,
+      phoneNumberId: firstLegacy.phone_number_id,
+      wabaId: firstLegacy.waba_id
+    };
+  }
   
   if (process.env.META_ACCESS_TOKEN && process.env.PHONE_NUMBER_ID) {
     return {
@@ -159,24 +215,114 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
 
 // 2. WhatsApp Accounts Management
 app.get('/api/whatsapp/accounts', authenticateToken, (req, res) => {
-  const accounts = db.prepare('SELECT id, nickname, display_phone_number, verified_name, is_active FROM whatsapp_settings WHERE org_id = ?').all(req.user.org_id);
-  res.json(accounts);
+  try {
+    const accounts = db.prepare('SELECT id, display_name, phone_number, is_active FROM whatsapp_accounts WHERE org_id = ?').all(req.user.org_id);
+    const formatted = accounts.map(a => ({
+      id: a.id,
+      nickname: a.display_name,
+      display_phone_number: a.phone_number,
+      verified_name: a.display_name,
+      is_active: a.is_active
+    }));
+    
+    // Add legacy fallback if empty
+    if (formatted.length === 0) {
+      const legacy = db.prepare('SELECT id, nickname, display_phone_number, verified_name, is_active FROM whatsapp_settings WHERE org_id = ?').all(req.user.org_id);
+      return res.json(legacy);
+    }
+    
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/whatsapp/switch-account', authenticateToken, (req, res) => {
   const { id } = req.body;
-  db.prepare('UPDATE whatsapp_settings SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
-  db.prepare('UPDATE whatsapp_settings SET is_active = 1 WHERE id = ? AND org_id = ?').run(id, req.user.org_id);
-  
-  logAction(req.user.id, req.user.org_id, 'SWITCH_ACCOUNT', { accountId: id });
-  
-  res.json({ success: true });
+  try {
+    db.prepare('UPDATE whatsapp_accounts SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
+    db.prepare('UPDATE whatsapp_accounts SET is_active = 1 WHERE id = ? AND org_id = ?').run(id, req.user.org_id);
+    db.prepare('UPDATE whatsapp_settings SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
+    logAction(req.user.id, req.user.org_id, 'SWITCH_ACCOUNT', { accountId: id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/whatsapp/status', authenticateToken, async (req, res) => {
-  const dbConfig = await getWhatsAppConfig(req.user.org_id);
-  const isConnected = !!(dbConfig?.accessToken);
-  res.json({ connected: isConnected, details: dbConfig });
+  try {
+    const active = db.prepare('SELECT * FROM whatsapp_accounts WHERE org_id = ? AND is_active = 1').get(req.user.org_id);
+    if (active) {
+      return res.json({
+        connected: true,
+        details: {
+          id: active.id,
+          businessId: active.business_id,
+          wabaId: active.waba_id,
+          phoneNumberId: active.phone_number_id,
+          phoneNumber: active.phone_number,
+          displayName: active.display_name,
+          qualityRating: active.quality_rating || 'GREEN',
+          messagingLimit: active.messaging_limit || 'TIER_1K',
+          status: active.status || 'Connected',
+          createdAt: active.created_at
+        }
+      });
+    }
+    
+    // Legacy fallback
+    const legacy = db.prepare('SELECT * FROM whatsapp_settings WHERE org_id = ? AND is_active = 1').get(req.user.org_id);
+    if (legacy) {
+      return res.json({
+        connected: true,
+        details: {
+          id: legacy.id,
+          wabaId: legacy.waba_id,
+          phoneNumberId: legacy.phone_number_id,
+          phoneNumber: legacy.display_phone_number,
+          displayName: legacy.nickname || legacy.verified_name,
+          qualityRating: 'GREEN',
+          messagingLimit: 'TIER_1K',
+          status: 'Connected',
+          createdAt: legacy.created_at
+        }
+      });
+    }
+    
+    res.json({ connected: false, details: null });
+  } catch (error) {
+    console.error("Fetch status error:", error.message);
+    res.status(500).json({ error: "Failed to fetch status" });
+  }
+});
+
+app.post('/api/whatsapp/disconnect', authenticateToken, (req, res) => {
+  try {
+    db.prepare('UPDATE whatsapp_accounts SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
+    db.prepare('UPDATE whatsapp_settings SET is_active = 0 WHERE org_id = ?').run(req.user.org_id);
+    logAction(req.user.id, req.user.org_id, 'DISCONNECT_WHATSAPP', { status: 'disconnected' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to disconnect connection" });
+  }
+});
+
+app.post('/api/whatsapp/reconnect', authenticateToken, async (req, res) => {
+  try {
+    const config = await getWhatsAppConfig(req.user.org_id);
+    if (!config || !config.accessToken) {
+      return res.status(400).json({ error: "No active connection to reconnect" });
+    }
+    // Verify token validity by calling Graph API
+    await axios.get(`https://graph.facebook.com/v22.0/me`, {
+      headers: { 'Authorization': `Bearer ${config.accessToken}` }
+    });
+    res.json({ success: true, message: "Connection is healthy and active!" });
+  } catch (error) {
+    console.error("Reconnect verification failed:", error.response?.data || error.message);
+    res.status(400).json({ error: "Access token has expired or is invalid. Please connect again." });
+  }
 });
 
 const fs = require('fs');
@@ -212,9 +358,7 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
   try {
     let accessToken;
 
-    // 1. Exchange code for access token. 
-    // We use the same version as the frontend SDK (v22.0).
-    // We pass the exact redirectUri from the frontend for a perfect match.
+    // 1. Exchange code for access token
     const tokenRes = await axios.get(`https://graph.facebook.com/v22.0/oauth/access_token`, {
       params: {
         client_id: appId,
@@ -227,8 +371,7 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
     console.log('[DEBUG] Token exchange successful');
     fs.appendFileSync('signup_debug.log', `\n[SUCCESS] Token exchange worked with redirectUri: ${redirectUri}\n`);
 
-    // 2. Inspect the token to get the WABA ID granted during Embedded Signup
-    // The debug_token endpoint returns granular_scopes which includes the WABA IDs
+    // 2. Inspect token to get WABA ID
     const debugRes = await axios.get(`https://graph.facebook.com/v22.0/debug_token`, {
       params: {
         input_token: accessToken,
@@ -238,13 +381,11 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
 
     fs.appendFileSync('signup_debug.log', `\n[DEBUG_TOKEN] ${JSON.stringify(debugRes.data)}\n`);
 
-    // Extract WABA ID from granular scopes
     const granularScopes = debugRes.data?.data?.granular_scopes || [];
     const wabaScope = granularScopes.find(s => s.scope === 'whatsapp_business_management');
     let wabaId = wabaScope?.target_ids?.[0];
 
     if (!wabaId) {
-      // Granular scopes exist but without target_ids — fetch WABAs by querying associated businesses
       fs.appendFileSync('signup_debug.log', `\n[INFO] No target_ids in granular_scopes, fetching via businesses fallback\n`);
       try {
         const businessesRes = await axios.get(`https://graph.facebook.com/v22.0/me/businesses`, {
@@ -252,7 +393,6 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
         });
         const businesses = businessesRes.data?.data || [];
         for (const business of businesses) {
-          // Try owned_whatsapp_business_accounts
           const wabaRes = await axios.get(`https://graph.facebook.com/v22.0/${business.id}/owned_whatsapp_business_accounts`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           });
@@ -261,8 +401,6 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
             wabaId = accounts[0].id;
             break;
           }
-          
-          // Also try client_whatsapp_business_accounts
           const clientWabaRes = await axios.get(`https://graph.facebook.com/v22.0/${business.id}/client_whatsapp_business_accounts`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           });
@@ -288,6 +426,17 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
 
     fs.appendFileSync('signup_debug.log', `\n[WABA] Found WABA ID: ${wabaId}\n`);
 
+    // 2.5 Retrieve Business ID using WABA endpoint
+    let businessId = null;
+    try {
+      const wabaDetails = await axios.get(`https://graph.facebook.com/v22.0/${wabaId}?fields=owner_business_info`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      businessId = wabaDetails.data?.owner_business_info?.id || null;
+    } catch (err) {
+      console.error("Failed to fetch WABA business info:", err.message);
+    }
+
     // 3. Fetch Phone Numbers for this WABA
     const phoneRes = await axios.get(`https://graph.facebook.com/v22.0/${wabaId}/phone_numbers`, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -300,7 +449,35 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
     const displayPhoneNumber = phoneData.display_phone_number;
     const verifiedName = phoneData.verified_name;
 
-    // 3.5 Register the Phone Number on Meta Cloud API client (required for sending messages)
+    // 3.3 Automate Webhook subscription for this WABA
+    console.log(`[INFO] Subscribing WABA ${wabaId} to app webhooks...`);
+    try {
+      await axios({
+        method: 'POST',
+        url: `https://graph.facebook.com/v22.0/${wabaId}/subscribed_apps`,
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      console.log(`[SUCCESS] WABA ${wabaId} subscribed successfully`);
+      fs.appendFileSync('signup_debug.log', `\n[SUCCESS] WABA ${wabaId} subscribed successfully\n`);
+    } catch (subError) {
+      console.error("Failed to subscribe WABA to app webhooks:", subError.response?.data || subError.message);
+      fs.appendFileSync('signup_debug.log', `\n[WARNING] Webhook subscription failed: ${JSON.stringify(subError.response?.data || subError.message)}\n`);
+    }
+
+    // 3.4 Fetch Quality Rating & Messaging Limits from Meta
+    let qualityRating = 'GREEN';
+    let messagingLimit = 'TIER_1K';
+    try {
+      const phoneDetails = await axios.get(`https://graph.facebook.com/v22.0/${phoneNumberId}?fields=quality_rating,messaging_limit_tier`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      qualityRating = phoneDetails.data.quality_rating || 'GREEN';
+      messagingLimit = phoneDetails.data.messaging_limit_tier || 'TIER_1K';
+    } catch (err) {
+      console.error("Failed to fetch phone quality details:", err.response?.data || err.message);
+    }
+
+    // 3.5 Register the Phone Number on Meta Cloud API client
     console.log(`[INFO] Registering phone number ID ${phoneNumberId} on Meta Cloud API client`);
     try {
       await axios({
@@ -323,12 +500,15 @@ app.post('/api/whatsapp/embedded-signup', authenticateToken, async (req, res) =>
     }
 
     // 4. Save to Database (Multi-tenant)
+    db.prepare('UPDATE whatsapp_accounts SET is_active = 0 WHERE org_id = ?').run(orgId);
     const stmt = db.prepare(`
-      INSERT INTO whatsapp_settings (org_id, waba_id, phone_number_id, access_token, display_phone_number, verified_name, status, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, 'Connected', 1)
+      INSERT INTO whatsapp_accounts (
+        user_id, org_id, business_id, waba_id, phone_number_id, phone_number,
+        display_name, access_token, quality_rating, messaging_limit, status, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Connected', 1)
     `);
 
-    stmt.run(orgId, wabaId, phoneNumberId, accessToken, displayPhoneNumber, verifiedName);
+    stmt.run(req.user.id, orgId, businessId, wabaId, phoneNumberId, displayPhoneNumber, verifiedName, accessToken, qualityRating, messagingLimit);
 
     logAction(req.user.id, orgId, 'CONNECT_WHATSAPP', { method: 'EMBEDDED', phone: displayPhoneNumber });
 
@@ -2090,6 +2270,45 @@ app.use((err, req, res, next) => {
   console.error('[GLOBAL ERROR]', err.stack);
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
+
+// --- AUTO HEALTH CHECK CRON (EVERY 15 MINUTES) ---
+setInterval(async () => {
+  console.log("🕒 Running scheduled 15-minute WhatsApp health check...");
+  try {
+    const activeAccounts = db.prepare('SELECT * FROM whatsapp_accounts WHERE is_active = 1').all();
+    for (const acc of activeAccounts) {
+      try {
+        const res = await axios.get(`https://graph.facebook.com/v22.0/${acc.phone_number_id}?fields=quality_rating,messaging_limit_tier,status`, {
+          headers: { 'Authorization': `Bearer ${acc.access_token}` }
+        });
+        
+        const qualityRating = res.data.quality_rating || 'GREEN';
+        const messagingLimit = res.data.messaging_limit_tier || 'TIER_1K';
+        const phoneStatus = res.data.status || 'Connected';
+        
+        db.prepare(`
+          UPDATE whatsapp_accounts 
+          SET quality_rating = ?, messaging_limit = ?, status = ?, updated_at = CURRENT_TIMESTAMP 
+          WHERE id = ?
+        `).run(qualityRating, messagingLimit, phoneStatus, acc.id);
+        
+        console.log(`✅ Health check success for number ${acc.phone_number}: status=${phoneStatus}, quality=${qualityRating}`);
+      } catch (err) {
+        console.error(`❌ Health check failed for account ID ${acc.id} (${acc.phone_number}):`, err.response?.data || err.message);
+        const isAuthError = err.response?.status === 401 || err.response?.status === 400;
+        if (isAuthError) {
+          db.prepare(`
+            UPDATE whatsapp_accounts 
+            SET status = 'Disconnected', updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ?
+          `).run(acc.id);
+        }
+      }
+    }
+  } catch (globalErr) {
+    console.error("Global health check runner error:", globalErr.message);
+  }
+}, 15 * 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 API Server running on http://localhost:${PORT}`);
