@@ -1,6 +1,6 @@
-# Hostinger hPanel Node.js Deployment Guide for Spark AI (Infokart)
+# Hostinger hPanel Node.js Deployment Guide for Infokart
 
-This guide walks you through deploying your Spark AI (Infokart) web application on **Hostinger Shared or Cloud Node.js Hosting** (using the hPanel dashboard).
+This guide walks you through deploying your Infokart web application on **Hostinger Shared or Cloud Node.js Hosting** (using the hPanel dashboard).
 
 Since our Express backend is already configured to serve the React frontend static pages, you do NOT need a VPS, Nginx, or separate hosting. Your entire application (React + Node.js) runs as a single Node.js app.
 
@@ -79,7 +79,7 @@ If pasting the long `FIREBASE_PRIVATE_KEY` into Hostinger's environment variable
 
 ## Step 6: Start/Restart the Application
 1. Click **Restart App** or **Start** on the Hostinger Node.js panel.
-2. Visit your domain `https://yourdomain.com` in your browser. Your Spark AI app is now running, backed by Firebase!
+2. Visit your domain `https://yourdomain.com` in your browser. Your Infokart app is now running, backed by Firebase!
 
 ---
 
