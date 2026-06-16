@@ -274,7 +274,7 @@ const Settings = () => {
                   <div style={{ marginBottom: '32px' }}>
                     <h2 style={{ fontSize: '22px', fontWeight: '900', marginBottom: '8px' }}>WhatsApp Business Onboarding</h2>
                     <p style={{ color: '#4b5563', fontSize: '14px', lineHeight: '1.5' }}>
-                      Connect your number to enable Spark AI to converse with customers and run broadcast campaigns.
+                      Connect your number to enable Infokart to converse with customers and run broadcast campaigns.
                     </p>
                   </div>
 

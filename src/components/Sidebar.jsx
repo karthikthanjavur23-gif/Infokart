@@ -59,7 +59,7 @@ const Sidebar = () => {
             <div className="brand-logo" style={{ backgroundColor: '#7c3aed' }}>
               <Sparkles size={14} color="white" fill="white" />
             </div>
-            <span>Spark</span>AI
+            <span>INFO</span>KART
           </div>
         ) : (
           <div className="brand-logo" style={{ margin: '0 auto', backgroundColor: '#7c3aed' }}>

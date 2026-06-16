@@ -17,7 +17,7 @@ const Layout = () => {
   const [copilotInput, setCopilotInput] = useState('');
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [copilotMessages, setCopilotMessages] = useState([
-    { role: 'assistant', content: "Hi! I'm your Spark AI Copilot. I can help you create campaigns, configure your WhatsApp AI Employee, train Knowledge Base documents, or view CRM insights. What is our goal today?" }
+    { role: 'assistant', content: "Hi! I'm your InfoKart Copilot. I can help you create campaigns, configure your WhatsApp AI Employee, train Knowledge Base documents, or view CRM insights. What is our goal today?" }
   ]);
 
   const suggestions = [
@@ -135,7 +135,7 @@ const Layout = () => {
               <div className="ai-copilot-header-info">
                 <Sparkles size={16} />
                 <div>
-                  <div className="ai-copilot-header-title">Spark AI Copilot</div>
+                  <div className="ai-copilot-header-title">InfoKart Copilot</div>
                   <div className="ai-copilot-header-subtitle">AI Agent Workspace Companion</div>
                 </div>
               </div>
