@@ -3,24 +3,31 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const admin = require('firebase-admin');
 
-const dbPath = process.env.PERSISTENT_DB_PATH || path.resolve(__dirname, 'infokart.db');
-
-// Ensure parent directory exists
-const parentDir = path.dirname(dbPath);
-if (!fs.existsSync(parentDir)) {
-  fs.mkdirSync(parentDir, { recursive: true });
-}
-
-const rawDb = new Database(dbPath);
-
-// Initialize Firebase (if configured)
-let rtdb = null;
 const firebaseProjectId = process.env.FIREBASE_PROJECT_ID;
 const firebaseClientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-const firebaseDatabaseUrl = process.env.FIREBASE_DATABASE_URL || 'https://infowaves-waba-default-rtdb.firebaseio.com/';
-
 const serviceKeyPath = path.resolve(__dirname, 'serviceAccountKey.json');
+
+const isFirebaseConfigured = (firebaseProjectId && firebaseClientEmail && firebasePrivateKey) || fs.existsSync(serviceKeyPath);
+
+const dbPath = isFirebaseConfigured ? ':memory:' : (process.env.PERSISTENT_DB_PATH || path.resolve(__dirname, 'infokart.db'));
+
+// Ensure parent directory exists (if not in-memory)
+if (dbPath !== ':memory:') {
+  const parentDir = path.dirname(dbPath);
+  if (!fs.existsSync(parentDir)) {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+}
+
+const rawDb = new Database(dbPath);
+if (dbPath === ':memory:') {
+  console.log("⚡ Database is running in In-Memory Mode synced directly to Firebase Realtime Database!");
+}
+
+// Initialize Firebase (if configured)
+let rtdb = null;
+const firebaseDatabaseUrl = process.env.FIREBASE_DATABASE_URL || 'https://infowaves-waba-default-rtdb.firebaseio.com/';
 
 if (firebaseProjectId && firebaseClientEmail && firebasePrivateKey) {
   try {
