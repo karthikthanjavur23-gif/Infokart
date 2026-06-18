@@ -21,7 +21,7 @@ const AiAgent = () => {
   const [simQuery, setSimQuery] = useState('');
   const [simLoading, setSimLoading] = useState(false);
   const [simMessages, setSimMessages] = useState([
-    { sender: 'bot', content: "Hello! I am your new WhatsApp AI employee. Type a message on the right to test how I respond using your Knowledge Base or Spark AI configuration!" }
+    { sender: 'bot', content: "Hello! I am your new WhatsApp AI employee. Type a message on the right to test how I respond using your Knowledge Base or Infokart AI configuration!" }
   ]);
 
   // Load configuration from local API
@@ -64,7 +64,7 @@ const AiAgent = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("Spark AI WhatsApp employee configuration saved!");
+        alert("Infokart AI WhatsApp employee configuration saved!");
         if (data.agent) {
           setAgent(data.agent);
         }
@@ -141,7 +141,7 @@ const AiAgent = () => {
           <Sparkles className="text-purple-600 animate-pulse" size={24} /> AI Agent Employee
         </h1>
         <p className="text-slate-500 text-xs mt-1">
-          Deploy and manage your permanent WhatsApp AI representative. Train them on sparkaichat.com or use local files.
+          Deploy and manage your permanent WhatsApp AI representative. Train them on Infokart AI or use local files.
         </p>
       </div>
 
@@ -216,30 +216,30 @@ const AiAgent = () => {
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Greeting Message (sent on thread start)</label>
               <input
                 type="text"
-                placeholder="e.g. Hello! I am the Spark AI assistant. How can I help you today?"
+                placeholder="e.g. Hello! I am the Infokart AI assistant. How can I help you today?"
                 value={agent.greeting_message}
                 onChange={e => setAgent({ ...agent, greeting_message: e.target.value })}
                 style={{ height: '40px', marginTop: 0 }}
               />
             </div>
 
-            {/* Spark AI Chat configuration portal */}
+            {/* Infokart AI Chat configuration portal */}
             <div className="bg-purple-50/40 border border-purple-100/50 p-5 rounded-2xl flex flex-col gap-4">
               <div>
                 <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Cpu className="text-purple-600" size={16} /> Connect to sparkaichat.com Agent
+                  <Cpu className="text-purple-600" size={16} /> Connect to Infokart AI Agent
                 </h4>
                 <p className="text-[10px] text-slate-500 font-medium mt-0.5">
-                  Input credentials below to route WhatsApp queries to your external Spark AI Chat account. Leaves blank to use local Knowledge Base.
+                  Input credentials below to route WhatsApp queries to your external Infokart AI account. Leave blank to use local Knowledge Base.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="form-group flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[#7c3aed] uppercase tracking-wider">Spark AI API Key</label>
+                  <label className="text-[9px] font-bold text-[#7c3aed] uppercase tracking-wider">Infokart AI API Key</label>
                   <input
                     type="password"
-                    placeholder="Enter Spark AI API Key"
+                    placeholder="Enter Infokart AI API Key"
                     value={agent.spark_api_key}
                     onChange={e => setAgent({ ...agent, spark_api_key: e.target.value })}
                     className="border-purple-200 bg-white"
@@ -248,10 +248,10 @@ const AiAgent = () => {
                 </div>
 
                 <div className="form-group flex flex-col gap-1.5">
-                  <label className="text-[9px] font-bold text-[#7c3aed] uppercase tracking-wider">Spark AI Agent ID</label>
+                  <label className="text-[9px] font-bold text-[#7c3aed] uppercase tracking-wider">Infokart AI Agent ID</label>
                   <input
                     type="text"
-                    placeholder="Enter Spark AI Agent ID"
+                    placeholder="Enter Infokart AI Agent ID"
                     value={agent.spark_agent_id}
                     onChange={e => setAgent({ ...agent, spark_agent_id: e.target.value })}
                     className="border-purple-200 bg-white"

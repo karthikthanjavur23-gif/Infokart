@@ -130,7 +130,7 @@ const Analytics = () => {
             <div className="flex items-baseline gap-1.5 mt-1">
               <span className="text-3xl font-extrabold text-slate-800">{data.aiResponses}</span>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium mt-1">Total responses formulated and sent by the Spark AI engine.</p>
+            <p className="text-[10px] text-slate-400 font-medium mt-1">Total responses formulated and sent by the Infokart AI engine.</p>
           </div>
         </div>
 
@@ -228,10 +228,10 @@ const Analytics = () => {
           </div>
 
           <div className="flex flex-col gap-6 my-4">
-            {/* Speed Item 1: Spark AI API response */}
+            {/* Speed Item 1: Infokart AI API response */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="font-bold text-slate-700">Spark AI API Latency</span>
+                <span className="font-bold text-slate-700">Infokart AI API Latency</span>
                 <span className="font-extrabold text-purple-600">820 ms</span>
               </div>
               <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -265,7 +265,7 @@ const Analytics = () => {
           <div className="bg-slate-50 rounded-xl p-3 flex gap-2.5 items-center">
             <Clock className="text-purple-600 shrink-0" size={16} />
             <span className="text-[10px] text-slate-500 font-semibold leading-relaxed">
-              Spark AI routes messages instantly, reducing lead response times by <strong className="text-purple-600">92%</strong> compared to manual handling.
+              Infokart AI routes messages instantly, reducing lead response times by <strong className="text-purple-600">92%</strong> compared to manual handling.
             </span>
           </div>
         </div>

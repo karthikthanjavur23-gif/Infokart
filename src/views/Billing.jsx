@@ -32,7 +32,7 @@ const Billing = () => {
       features: [
         '3 Connected WABA Accounts',
         '10,000 AI Agent replies/mo',
-        'Spark AI External Key Integration',
+        'Infokart AI External Key Integration',
         'Unlimited Knowledge Base (URLs, PDFs, FAQ)',
         '10 Team Inbox Members',
         'Broadcast Campaign Campaigns',
@@ -71,7 +71,7 @@ const Billing = () => {
           <CreditCard className="text-purple-600" size={24} /> Plans & Subscription
         </h1>
         <p className="text-slate-500 text-xs mt-1">
-          Scale your WhatsApp AI workforce with our premium subscriptions. Integrates with sparkaichat.com or SQLite fallback.
+          Scale your WhatsApp AI workforce with our premium subscriptions. Integrates with Infokart AI key or SQLite fallback.
         </p>
       </div>
 
@@ -174,15 +174,15 @@ const Billing = () => {
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-1.5">
-            <h5 className="text-xs font-bold text-slate-700">How do I connect my Spark AI Chat credentials?</h5>
+            <h5 className="text-xs font-bold text-slate-700">How do I connect my Infokart AI Chat credentials?</h5>
             <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-              Once you subscribe to Pro or Enterprise, head to the <strong className="text-purple-600">AI Agent</strong> configuration tab. You can input your sparkaichat.com API key and Agent ID to route messages directly through your trained Spark AI model.
+              Once you subscribe to Pro or Enterprise, head to the <strong className="text-purple-600">AI Agent</strong> configuration tab. You can input your Infokart API key and Agent ID to route messages directly through your trained AI model.
             </p>
           </div>
           <div className="flex flex-col gap-1.5">
             <h5 className="text-xs font-bold text-slate-700">Can I utilize the platform completely offline?</h5>
             <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-              Yes! If you choose not to connect Spark AI credentials, our built-in local fallback engine leverages SQLite vector similarity matching combined with Google Gemini LLM using your own local env variables to automate WABA queries.
+              Yes! If you choose not to connect Infokart AI credentials, our built-in local fallback engine leverages SQLite vector similarity matching combined with Google Gemini LLM using your own local env variables to automate WABA queries.
             </p>
           </div>
         </div>

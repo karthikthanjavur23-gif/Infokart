@@ -1964,7 +1964,7 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-// --- SPARK AI AGENT & KNOWLEDGE BASE SERVICE ---
+// --- INFOKART AI AGENT & KNOWLEDGE BASE SERVICE ---
 
 async function querySparkAi(apiKey, agentId, messageText, phoneNumber) {
   try {
@@ -1980,10 +1980,10 @@ async function querySparkAi(apiKey, agentId, messageText, phoneNumber) {
       timeout: 10000 // 10 second timeout
     });
 
-    console.log("[Spark AI API] Response:", response.data);
+    console.log("[Infokart AI API] Response:", response.data);
     return response.data?.reply || response.data?.message || response.data?.response || response.data?.text || (typeof response.data === 'string' ? response.data : null);
   } catch (error) {
-    console.error("[Spark AI API Error] Failed calling sparkaichat.com:", error.response?.data || error.message);
+    console.error("[Infokart AI API Error] Failed calling sparkaichat.com:", error.response?.data || error.message);
     return null;
   }
 }
@@ -2002,7 +2002,7 @@ async function triggerAiAgent(orgId, conversationId, userMessageText) {
 
     let aiResponse = null;
 
-    // 1. Try querying Spark AI Chat external API first if configured
+    // 1. Try querying Infokart AI Chat external API first if configured
     if (agent.spark_api_key && agent.spark_agent_id) {
       console.log(`[AI Agent] Forwarding query to sparkaichat.com for phone: ${contact.phone_number}`);
       aiResponse = await querySparkAi(agent.spark_api_key, agent.spark_agent_id, userMessageText, contact.phone_number);
@@ -2010,7 +2010,7 @@ async function triggerAiAgent(orgId, conversationId, userMessageText) {
 
     // 2. Local fallback loop if external API is unconfigured/fails
     if (!aiResponse) {
-      console.log("[AI Agent] External Spark AI unconfigured or failed. Falling back to local Gemini execution.");
+      console.log("[AI Agent] External Infokart AI unconfigured or failed. Falling back to local Gemini execution.");
 
       // Get conversation history context
       const history = db.prepare('SELECT sender, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 6').all(conversationId);
