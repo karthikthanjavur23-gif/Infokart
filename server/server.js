@@ -2260,9 +2260,18 @@ app.post('/api/public/send', async (req, res) => {
   }
 });
 
-// All other routes should serve the frontend index.html
+// All other routes should serve the frontend index.html if it exists, otherwise return API status
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../dist', 'index.html'));
+  const distPath = path.join(__dirname, '../dist', 'index.html');
+  if (fs.existsSync(distPath)) {
+    res.sendFile(distPath);
+  } else {
+    res.json({
+      status: "healthy",
+      message: "Infokart API Server is running successfully!",
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Global Error Handler
